@@ -294,8 +294,8 @@ void InitDirect3DApp::BuildShadersAndInputLayout()
 {
 	HRESULT hr;
 
-	m_pxVertexShaderByteCode = d3dUtil::CompileShader(L"Shader\\color.hlsl", nullptr, "VS", "vs_5_0");
-	m_pxPixelShaderByteCode = d3dUtil::CompileShader(L"Shader\\color.hlsl", nullptr, "PS", "ps_5_0");
+	m_pxVertexShaderByteCode = d3dUtil::CompileShader(L"Shaders\\color.hlsl", nullptr, "VS", "vs_5_0");
+	m_pxPixelShaderByteCode = d3dUtil::CompileShader(L"Shaders\\color.hlsl", nullptr, "PS", "ps_5_0");
 
 	m_inputLayout = 
 	{
@@ -351,7 +351,7 @@ void InitDirect3DApp::BuildBoxGeometry()
 	m_pxBoxGeometry = std::make_unique<MeshGeometry>();
 	m_pxBoxGeometry->Name = "Geometry";
 
-	ThrowIfFailed(D3DCreateBlob(kuiIndexBufferByteSize, &m_pxBoxGeometry->VertexBufferCPU));
+	ThrowIfFailed(D3DCreateBlob(kuiVertexBufferByteSize, &m_pxBoxGeometry->VertexBufferCPU));
 	CopyMemory(m_pxBoxGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), kuiVertexBufferByteSize);
 
 	ThrowIfFailed(D3DCreateBlob(kuiIndexBufferByteSize, &m_pxBoxGeometry->IndexBufferCPU));
