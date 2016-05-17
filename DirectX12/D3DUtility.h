@@ -25,7 +25,7 @@
 #include "DDSTextureLoader.h"
 #include "MathHelper.h"
 
-extern const int gNumFrameResources;
+extern const int g_kiNumFrameResources;
 
 inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
 {
@@ -118,9 +118,9 @@ class DxException
 // buffers so that we can implement the technique described by Figure 6.3.
 struct SubmeshGeometry
 {
-	UINT IndexCount = 0;
-	UINT StartIndexLocation = 0;
-	INT BaseVertexLocation = 0;
+	UINT m_uiIndexCount = 0;
+	UINT m_uiStartIndexLocation = 0;
+	INT m_iBaseVertexLocation = 0;
 
 	// Bounding box of the geometry defined by this submesh. 
 	// This is used in later chapters of the book.
@@ -224,7 +224,7 @@ struct Material
 	// Because we have a material constant buffer for each FrameResource, we have to apply the
 	// update to each FrameResource.  Thus, when we modify a material we should set 
 	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
-	int NumFramesDirty = gNumFrameResources;
+	int NumFramesDirty = g_kiNumFrameResources;
 
 	// Material constant buffer data used for shading.
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };

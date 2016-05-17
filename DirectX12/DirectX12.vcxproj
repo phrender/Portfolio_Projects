@@ -153,7 +153,9 @@
     <ClInclude Include="D3DApp.h" />
     <ClInclude Include="D3DUtility.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GameTimer.h" />
+    <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="UploadBuffer.h" />
   </ItemGroup>
@@ -161,7 +163,9 @@
     <ClCompile Include="D3DApp.cpp" />
     <ClCompile Include="D3DUtility.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="GameTimer.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathHelper.cpp" />
   </ItemGroup>
