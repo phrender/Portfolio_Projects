@@ -112,7 +112,7 @@ class BinarySearchTree
 		{
 			if (pTree == nullptr)
 			{
-				pTree = new BinarySearchTree{ kElement, nullptr, nullptr };
+				pTree = new BinaryNode{kElement, nullptr, nullptr};
 			}
 			else if (kElement < pTree->m_element)
 			{
