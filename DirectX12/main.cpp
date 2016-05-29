@@ -190,21 +190,12 @@ void InitDirect3DApp::Update(const GameTimer& kGameTimer)
 
 void InitDirect3DApp::Draw(const GameTimer& kGameTimer)
 {
-	auto cmdListAlloc = m_pxCurrentFrameResource->m_pxCommandListAllocator;
 
-	ThrowIfFailed(cmdListAlloc->Reset());
+	auto commandListAllocator = m_pxCurrentFrameResource->m_pxCommandListAllocator;
 
-	/*
-	if (m_bIsWireframe)
-	{
-		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), m_pipelineStateObjects["opaque_wireframe"].Get()));
-	}
-	else
-	{
-		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), m_pipelineStateObjects["opaque"].Get()));
-	};
-	*/
-
+	ThrowIfFailed(commandListAllocator->Reset());
+	ThrowIfFailed(mCommandList->Reset(commandListAllocator.Get(), m_pxOpaquePipelineStateObject.Get()));
+	
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
@@ -215,17 +206,7 @@ void InitDirect3DApp::Draw(const GameTimer& kGameTimer)
 
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	//ID3D12DescriptorHeap* descriptorHeaps[] = { m_pxConstantBufferViewHeap.Get() };
-	//mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
 	mCommandList->SetGraphicsRootSignature(m_pxRootSignature.Get());
-
-	/*
-	int passCbvIndex = m_uiPassConstantBufferViewOffset + m_iCurrentFrameResourceIndex;
-	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pxConstantBufferViewHeap->GetGPUDescriptorHandleForHeapStart());
-	passCbvHandle.Offset(passCbvIndex, mCbvSrvUavDescriptorSize);
-	mCommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
-	*/
 
 	auto passConstantBuffer = m_pxCurrentFrameResource->m_pxPassConstantBuffer->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passConstantBuffer->GetGPUVirtualAddress());
@@ -236,14 +217,13 @@ void InitDirect3DApp::Draw(const GameTimer& kGameTimer)
 
 	ThrowIfFailed(mCommandList->Close());
 
-	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
-	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	ID3D12CommandList* pCommandLists[] = {mCommandList.Get()};
+	mCommandQueue->ExecuteCommandLists(_countof(pCommandLists), pCommandLists);
 
 	ThrowIfFailed(mSwapChain->Present(0, 0));
 	mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
 
 	m_pxCurrentFrameResource->m_ui64Fence = ++mCurrentFence;
-
 	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 };
 
@@ -493,6 +473,7 @@ void InitDirect3DApp::BuildShadersAndInputLayout()
 	m_inputLayout =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		//{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 	};
@@ -685,16 +666,15 @@ void InitDirect3DApp::BuildPipelineStateObjects()
 	opaquePsoDesc.pRootSignature = m_pxRootSignature.Get();
 	opaquePsoDesc.VS =
 	{
-		reinterpret_cast<BYTE*>(m_shaders["standardVS"]->GetBufferPointer()), 
+		reinterpret_cast<BYTE*>(m_shaders["standardVS"]->GetBufferPointer()),
 		m_shaders["standardVS"]->GetBufferSize()
 	};
 	opaquePsoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(m_shaders["opaquePS"]->GetBufferPointer()), 
+		reinterpret_cast<BYTE*>(m_shaders["opaquePS"]->GetBufferPointer()),
 		m_shaders["opaquePS"]->GetBufferSize()
 	};
 	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	//opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	opaquePsoDesc.SampleMask = UINT_MAX;
@@ -704,6 +684,7 @@ void InitDirect3DApp::BuildPipelineStateObjects()
 	opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
 	opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
+
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&m_pxOpaquePipelineStateObject)));
 };
 
@@ -771,7 +752,7 @@ void InitDirect3DApp::BuildRenderItems()
 
 	auto gridRenderItem = std::make_unique<RenderItem>();
 	gridRenderItem->m_worldMatrix = MathHelper::Identity4x4();
-	XMStoreFloat4x4(&boxRenderItem->m_textureTransformMatrix, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	XMStoreFloat4x4(&gridRenderItem->m_textureTransformMatrix, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	gridRenderItem->m_uiObjectConstantBufferIndex = 1;
 	gridRenderItem->m_pxMaterial = m_material["tile0"].get();
 	gridRenderItem->m_pxGeometry = m_geometries["shapeGeo"].get();
@@ -786,7 +767,7 @@ void InitDirect3DApp::BuildRenderItems()
 	skullRenderItem->m_textureTransformMatrix = MathHelper::Identity4x4();
 	skullRenderItem->m_uiObjectConstantBufferIndex= 2;
 	skullRenderItem->m_pxMaterial = m_material["skullMat"].get();
-	skullRenderItem->m_pxGeometry = m_geometries["skullGeo"].get();
+	skullRenderItem->m_pxGeometry = m_geometries["skullGeometry"].get();
 	skullRenderItem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	skullRenderItem->m_uiIndexCount = skullRenderItem->m_pxGeometry->DrawArgs["skull"].m_uiIndexCount;
 	skullRenderItem->m_uiStartIndexLocation = skullRenderItem->m_pxGeometry->DrawArgs["skull"].m_uiStartIndexLocation;
@@ -808,7 +789,7 @@ void InitDirect3DApp::BuildRenderItems()
 		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i*5.0f);
 		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i*5.0f);
 
-		XMStoreFloat4x4(&leftCylRitem->m_worldMatrix, rightCylWorld);
+		XMStoreFloat4x4(&leftCylRitem->m_worldMatrix, leftCylWorld);
 		XMStoreFloat4x4(&leftCylRitem->m_textureTransformMatrix, brickTexTransform);
 		leftCylRitem->m_uiObjectConstantBufferIndex = uiObjectConstantBufferIndex++;
 		leftCylRitem->m_pxMaterial = m_material["bricks0"].get();
@@ -818,7 +799,7 @@ void InitDirect3DApp::BuildRenderItems()
 		leftCylRitem->m_uiStartIndexLocation = leftCylRitem->m_pxGeometry->DrawArgs["cylinder"].m_uiStartIndexLocation;
 		leftCylRitem->m_iBaseVertexLocation = leftCylRitem->m_pxGeometry->DrawArgs["cylinder"].m_iBaseVertexLocation;
 
-		XMStoreFloat4x4(&rightCylRitem->m_worldMatrix, leftCylWorld);
+		XMStoreFloat4x4(&rightCylRitem->m_worldMatrix, rightCylWorld);
 		XMStoreFloat4x4(&rightCylRitem->m_textureTransformMatrix, brickTexTransform);
 		rightCylRitem->m_uiObjectConstantBufferIndex = uiObjectConstantBufferIndex++;
 		rightCylRitem->m_pxMaterial = m_material["bricks0"].get();
