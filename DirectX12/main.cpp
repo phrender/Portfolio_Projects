@@ -289,7 +289,7 @@ void InitDirect3DApp::UpdateObjectCBs(const GameTimer& kGameTimer)
 			XMMATRIX worldMatrix = XMLoadFloat4x4(&e->m_worldMatrix);
 
 			ObjectConstants objConstants;
-			XMStoreFloat4x4(&objConstants.m_worlMatrix, XMMatrixTranspose(worldMatrix));
+			XMStoreFloat4x4(&objConstants.m_worldMatrix, XMMatrixTranspose(worldMatrix));
 
 			currObjectCB->CopyData(e->m_uiObjectConstantBufferIndex, objConstants);
 
@@ -316,8 +316,8 @@ void InitDirect3DApp::UpdateMainPassCB(const GameTimer& kGameTimer)
 	XMStoreFloat4x4(&m_mainPassConstantBuffer.m_inverseViewProjectionMatrix, XMMatrixTranspose(invViewProj));
 
 	m_mainPassConstantBuffer.m_eyePositionW = m_eyePosition;
-	m_mainPassConstantBuffer.m_renderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
-	m_mainPassConstantBuffer.m_inverseRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
+	m_mainPassConstantBuffer.m_renderTargetSizeMatrix = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
+	m_mainPassConstantBuffer.m_inverseRenderTargetSizeMatrix = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	m_mainPassConstantBuffer.m_fNearZ = 1.0f;
 	m_mainPassConstantBuffer.m_fFarZ = 1000.0f;
 	m_mainPassConstantBuffer.m_fTotalTime = kGameTimer.TotalTime();
@@ -553,7 +553,8 @@ void InitDirect3DApp::BuildPipelineStateObjects()
 		m_shaders["opaquePS"]->GetBufferSize()
 	};
 	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	//opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	opaquePsoDesc.SampleMask = UINT_MAX;
@@ -566,7 +567,8 @@ void InitDirect3DApp::BuildPipelineStateObjects()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&m_pipelineStateObjects["opaque"])));
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
-	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	//opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&m_pipelineStateObjects["opaque_wireframe"])));
 };
 
