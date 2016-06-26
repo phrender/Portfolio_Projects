@@ -56,50 +56,76 @@ inline std::wstring AnsiToWString(const std::string& str)
 	return std::wstring(buffer);
 }
 
+/*
+#if defined(_DEBUG)
+#ifndef Assert
+#define Assert(x, description)                                  \
+{                                                               \
+static bool ignoreAssert = false;                           \
+if(!ignoreAssert && !(x))                                   \
+{                                                           \
+Debug::AssertResult result = Debug::ShowAssertDialog(   \
+(L#x), description, AnsiToWString(__FILE__), __LINE__); \
+if(result == Debug::AssertIgnore)                           \
+{                                                           \
+ignoreAssert = true;                                    \
+}                                                           \
+else if(result == Debug::AssertBreak)           \
+{                                                           \
+__debugbreak();                                         \
+}                                                           \
+}                                                           \
+}
+#endif
+#else
+#ifndef Assert
+#define Assert(x, description)
+#endif
+#endif
+*/
+
 class d3dUtil
 {
-	public:
+public:
 
-		static bool IsKeyDown(int vkeyCode);
+	static bool IsKeyDown(int vkeyCode);
 
-		static std::string ToString(HRESULT hr);
+	static std::string ToString(HRESULT hr);
 
-		static UINT CalcConstantBufferByteSize(UINT uiByteSize)
-		{
-			/*
-			 * Constant buffers must be a multiple of the minimum hardware
-			 * allocation size (usually 256 bytes).  So round up to nearest
-			 * multiple of 256.  We do this by adding 255 and then masking off
-			 * the lower 2 bytes which store all bits < 256.
-			 * Example: Suppose byteSize = 300.
-			 * (300 + 255) & ~255
-			 * 555 & ~255
-			 * 0x022B & ~0x00ff
-			 * 0x022B & 0xff00
-			 * 0x0200
-			 * 512
-			 */
-			return (uiByteSize + 255) & ~255;
-		}
+	static UINT CalcConstantBufferByteSize(UINT byteSize)
+	{
+		// Constant buffers must be a multiple of the minimum hardware
+		// allocation size (usually 256 bytes).  So round up to nearest
+		// multiple of 256.  We do this by adding 255 and then masking off
+		// the lower 2 bytes which store all bits < 256.
+		// Example: Suppose byteSize = 300.
+		// (300 + 255) & ~255
+		// 555 & ~255
+		// 0x022B & ~0x00ff
+		// 0x022B & 0xff00
+		// 0x0200
+		// 512
+		return (byteSize + 255) & ~255;
+	}
 
-		static Microsoft::WRL::ComPtr<ID3DBlob> LoadBinary(const std::wstring& kwstrFilename);
-		static Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* pGraphicsCommandList, const void* kInitData, UINT64 ui64ByteSize, Microsoft::WRL::ComPtr<ID3D12Resource>& pUploadBuffer);
-		static Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& kwstrFilename, const D3D_SHADER_MACRO* kDefines, const std::string& kstrEntrypoint, const std::string& kstrTarget);
-}; // d3dUtil
+	static Microsoft::WRL::ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename);
+	static Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* pGraphicsCommandList, const void* kInitData, UINT64 uiByteSize, Microsoft::WRL::ComPtr<ID3D12Resource>& pUploadBuffer);
+	static Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& kwstrFilename, const D3D_SHADER_MACRO* kDefines, const std::string& kstrEntrypoint, const std::string& kstrTarget);
+};
 
 class DxException
 {
 	public:
 		DxException() = default;
-		DxException(HRESULT hr, const std::wstring& kwstrFunctionName, const std::wstring& kwstrFilename, int iLineNumber);
+		DxException(HRESULT hr, const std::wstring& wstrFunctionName, const std::wstring& wstrFilename, int iLineNumber);
 	
-		std::wstring ToString()const;
+		std::wstring ToString() const;
 	
 		HRESULT m_hrErrorCode = S_OK;
 		std::wstring m_wstrFunctionName;
 		std::wstring m_wstrFilename;
 		int m_iLineNumber = -1;
-}; // DxException
+};
 
 // Defines a subrange of geometry in a MeshGeometry.  This is for when multiple
 // geometries are stored in one vertex and index buffer.  It provides the offsets
@@ -113,8 +139,8 @@ struct SubmeshGeometry
 
 	// Bounding box of the geometry defined by this submesh. 
 	// This is used in later chapters of the book.
-	DirectX::BoundingBox Bounds;
-}; // SubmeshGeometry
+	DirectX::BoundingBox m_bounds;
+};
 
 struct MeshGeometry
 {
@@ -143,7 +169,7 @@ struct MeshGeometry
 	// the Submeshes individually.
 	std::unordered_map<std::string, SubmeshGeometry> m_drawArgs;
 
-	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbv;
 		vbv.BufferLocation = m_pxVertexBufferGPU->GetGPUVirtualAddress();
@@ -169,17 +195,17 @@ struct MeshGeometry
 		m_pxVertexBufferUploader = nullptr;
 		m_pxIndexBufferUploader = nullptr;
 	}
-}; // MeshGeometry
+};
 
 struct Light
 {
 	DirectX::XMFLOAT3 m_strength = { 0.5f, 0.5f, 0.5f };
-	float m_fFalloffStart = 1.0f;							// Point/Spot light only
-	DirectX::XMFLOAT3 m_direction = { 0.0f, -1.0f, 0.0f };	// Directional/Spot light only
-	float m_fFalloffEnd = 10.0f;							// Point/Spot light only
-	DirectX::XMFLOAT3 m_position = { 0.0f, 0.0f, 0.0f };	// Point/Spot light only
-	float m_fSpotPower = 64.0f;								// Spot light only
-}; // Light
+	float m_fFalloffStart = 1.0f;								// point/spot light only
+	DirectX::XMFLOAT3 m_direction = { 0.0f, -1.0f, 0.0f };		// directional/spot light only
+	float m_fFalloffEnd = 10.0f;								// point/spot light only
+	DirectX::XMFLOAT3 m_position = { 0.0f, 0.0f, 0.0f };		// point/spot light only
+	float m_fSpotPower = 64.0f;									// spot light only
+};
 
 #define MaxLights 16
 
@@ -191,7 +217,7 @@ struct MaterialConstants
 
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 m_materialTransform = MathHelper::Identity4x4();
-}; // MaterialConstants
+};
 
 // Simple struct to represent a material for our demos.  A production 3D engine
 // would likely create a class hierarchy of Materials.
@@ -204,10 +230,10 @@ struct Material
 	int m_iMaterialConstantBufferIndex = -1;
 
 	// Index into SRV heap for diffuse texture.
-	int m_iDiffuseShaderResourceViewHeapIndex = -1;
+	int m_iDiffuseSrvHeapIndex = -1;
 
 	// Index into SRV heap for normal texture.
-	int m_iNormalShaderResourceViewHeapIndex = -1;
+	int m_iNormalSrvHeapIndex = -1;
 
 	// Dirty flag indicating the material has changed and we need to update the constant buffer.
 	// Because we have a material constant buffer for each FrameResource, we have to apply the
@@ -218,9 +244,9 @@ struct Material
 	// Material constant buffer data used for shading.
 	DirectX::XMFLOAT4 m_diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT3 m_fresnelR0 = { 0.01f, 0.01f, 0.01f };
-	float m_fRoughness = .25f;
+	float m_fRoughness = 0.25f;
 	DirectX::XMFLOAT4X4 m_materialTransform = MathHelper::Identity4x4();
-}; // Material
+};
 
 struct Texture
 {
@@ -231,28 +257,26 @@ struct Texture
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pxResource = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pxUploadHeap = nullptr;
-}; // Texture
+};
 
 #ifndef ThrowIfFailed
-#define ThrowIfFailed(x)												\
-{																		\
-    HRESULT hr__ = (x);													\
-    std::wstring wfn = AnsiToWString(__FILE__);							\
-    if(FAILED(hr__))													\
-	{																	\
-		throw DxException(hr__, L#x, wfn, __LINE__);					\
-	}																	\
+#define ThrowIfFailed(x)                                              \
+{                                                                     \
+    HRESULT hr__ = (x);                                               \
+    std::wstring wfn = AnsiToWString(__FILE__);                       \
+    if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
 }
-#endif // ThrowIfFailed
+#endif
 
 #ifndef ReleaseCom
-#define ReleaseCom(x) {													\
-	if(x)																\
-	{																	\
-		x->Release();													\
-		x = 0;															\
-	}																	\
+#define ReleaseCom(x)			\
+{								\
+	if(x)						\
+	{							\
+		x->Release();			\
+		x = 0;					\
+	}							\
 }
-#endif // ReleaseCom
+#endif
 
 #endif // D3DUTILITY_H_INCLUDED
