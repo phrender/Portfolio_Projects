@@ -1,7 +1,5 @@
-//***************************************************************************************
-// d3dApp.h by Frank Luna (C) 2015 All Rights Reserved.
-//***************************************************************************************
-
+#ifndef D3DAPP_H_INCLUDED
+#define D3DAPP_H_INCLUDED
 #pragma once
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -126,3 +124,4 @@ protected:
 	int mClientHeight = 600;
 };
 
+#endif // D3DAPP_H_INCLUDED

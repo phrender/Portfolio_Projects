@@ -1,9 +1,5 @@
-//***************************************************************************************
-// d3dUtil.h by Frank Luna (C) 2015 All Rights Reserved.
-//
-// General helper code.
-//***************************************************************************************
-
+#ifndef D3DUTIL_H_INCLUDED
+#define D3DUTIL_H_INCLUDED
 #pragma once
 
 #include <windows.h>
@@ -275,3 +271,5 @@ struct Texture
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
 #endif
+
+#endif // D3DUTIL_H_INCLUDED

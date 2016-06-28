@@ -1,3 +1,5 @@
+#ifndef FRAMERESOURCE_H_INCLUDED
+#define FRAMERESOURCE_H_INCLUDED
 #pragma once
 
 #include "d3dUtil.h"
@@ -68,3 +70,5 @@ struct FrameResource
 		// check if these frame resources are still in use by the GPU.
 		UINT64 m_ui64Fence = 0;
 };
+
+#endif // FRAMERESOURCE_H_INCLUDED

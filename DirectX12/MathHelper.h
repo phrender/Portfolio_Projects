@@ -1,9 +1,5 @@
-//***************************************************************************************
-// MathHelper.h by Frank Luna (C) 2011 All Rights Reserved.
-//
-// Helper math class.
-//***************************************************************************************
-
+#ifndef MATHHELPER_H_INCLUDED
+#define MATHHELPER_H_INCLUDED
 #pragma once
 
 #include <Windows.h>
@@ -98,3 +94,4 @@ public:
 
 };
 
+#endif // MATHHELPER_H_INCLUDED

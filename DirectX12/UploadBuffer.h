@@ -1,3 +1,5 @@
+#ifndef UPLOADBUFFER_H_INCLUDED
+#define UPLOADBUFFER_H_INCLUDED
 #pragma once
 
 #include "d3dUtil.h"
@@ -62,3 +64,5 @@ private:
     UINT mElementByteSize = 0;
     bool mIsConstantBuffer = false;
 };
+
+#endif // UPLOADBUFFER_H_INCLUDED
