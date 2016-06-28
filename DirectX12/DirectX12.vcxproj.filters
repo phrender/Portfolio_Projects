@@ -42,9 +42,6 @@
     <ClInclude Include="D3DApp.h">
       <Filter>Header Files\Direct3D</Filter>
     </ClInclude>
-    <ClInclude Include="D3DUtility.h">
-      <Filter>Header Files\Direct3D</Filter>
-    </ClInclude>
     <ClInclude Include="DDSTextureLoader.h">
       <Filter>Header Files\Direct3D</Filter>
     </ClInclude>
@@ -63,15 +60,15 @@
     <ClInclude Include="FrameResource.h">
       <Filter>Header Files\Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="d3dUtil.h">
+      <Filter>Header Files\Direct3D</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="D3DApp.cpp">
-      <Filter>Source Files\Direct3D</Filter>
-    </ClCompile>
-    <ClCompile Include="D3DUtility.cpp">
       <Filter>Source Files\Direct3D</Filter>
     </ClCompile>
     <ClCompile Include="DDSTextureLoader.cpp">
@@ -88,6 +85,9 @@
     </ClCompile>
     <ClCompile Include="FrameResource.cpp">
       <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="d3dUtil.cpp">
+      <Filter>Source Files\Direct3D</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

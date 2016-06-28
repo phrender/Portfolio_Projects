@@ -151,7 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="D3DApp.h" />
-    <ClInclude Include="D3DUtility.h" />
+    <ClInclude Include="d3dUtil.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GameTimer.h" />
@@ -161,7 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3DApp.cpp" />
-    <ClCompile Include="D3DUtility.cpp" />
+    <ClCompile Include="d3dUtil.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="GameTimer.cpp" />
