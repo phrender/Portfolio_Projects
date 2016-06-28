@@ -64,6 +64,7 @@ class InitDirect3DApp : public D3DApp
 		void UpdateMaterialConstantBuffers(const GameTimer& kGameTimer);
 		void UpdateMainPassConstantBuffer(const GameTimer& kGameTimer);
 	
+		void LoadTextures();
 	    void BuildRootSignature();
 	    void BuildShadersAndInputLayout();
 	    void BuildShapeGeometry();
@@ -73,6 +74,8 @@ class InitDirect3DApp : public D3DApp
 	    void BuildMaterials();
 	    void BuildRenderItems();
 	    void DrawRenderItems(ID3D12GraphicsCommandList* pGraphicsCommandList, const std::vector<RenderItem*>& kRenderItems);
+
+		std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetSamplers();
 	 
 	private:
 		
