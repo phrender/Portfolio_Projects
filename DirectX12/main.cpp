@@ -431,13 +431,19 @@ void InitDirect3DApp::LoadTextures()
 	pStoneTexture->m_wstrFilename = L"Textures/stone.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pStoneTexture->m_wstrFilename.c_str(), pStoneTexture->m_pxResource, pStoneTexture->m_pxUploadHeap));
 
+	auto pFenceTexture = std::make_unique<Texture>();
+	pFenceTexture->m_strName = "fenceTexture";
+	pFenceTexture->m_wstrFilename = L"Textures/WireFence.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pStoneTexture->m_wstrFilename.c_str(), pStoneTexture->m_pxResource, pStoneTexture->m_pxUploadHeap));
+
 	auto pTileTexture = std::make_unique<Texture>();
 	pTileTexture->m_strName = "tileTexture";
-	pTileTexture->m_wstrFilename = L"Textures/stone.dds";
+	pTileTexture->m_wstrFilename = L"Textures/tile.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pTileTexture->m_wstrFilename.c_str(), pTileTexture->m_pxResource, pTileTexture->m_pxUploadHeap));
 
 	m_textures[pBricksTexture->m_strName] = std::move(pBricksTexture);
 	m_textures[pStoneTexture->m_strName] = std::move(pStoneTexture);
+	m_textures[pFenceTexture->m_strName] = std::move(pFenceTexture);
 	m_textures[pTileTexture->m_strName] = std::move(pTileTexture);
 };
 
@@ -476,47 +482,57 @@ void InitDirect3DApp::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC shaderResourceViewHeapDesc;
 	ZeroMemory(&shaderResourceViewHeapDesc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
-	shaderResourceViewHeapDesc.NumDescriptors = 3;
+	shaderResourceViewHeapDesc.NumDescriptors = 4;
 	shaderResourceViewHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	shaderResourceViewHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&shaderResourceViewHeapDesc, IID_PPV_ARGS(&m_pxSrvDescriptorHeap)));
 	
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_pxSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto bricksTex = m_textures["bricksTexture"]->m_pxResource;
-	auto stoneTex = m_textures["stoneTexture"]->m_pxResource;
-	auto tileTex = m_textures["tileTexture"]->m_pxResource;
+	auto pBricksTexture = m_textures["bricksTexture"]->m_pxResource;
+	auto pStoneTexture = m_textures["stoneTexture"]->m_pxResource;
+	auto pTileTexture = m_textures["tileTexture"]->m_pxResource;
+	auto pFenceTexture = m_textures["fenceTexture"]->m_pxResource;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = bricksTex->GetDesc().Format;
+	srvDesc.Format = pBricksTexture->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = bricksTex->GetDesc().MipLevels;
+	srvDesc.Texture2D.MipLevels = pBricksTexture->GetDesc().MipLevels;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(pBricksTexture.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, m_uiCbvSrvDescriptorSize);
 
-	srvDesc.Format = stoneTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = stoneTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(stoneTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = pStoneTexture->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = pStoneTexture->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(pStoneTexture.Get(), &srvDesc, hDescriptor);
+
+	// next descriptor
+	hDescriptor.Offset(1, m_uiCbvSrvDescriptorSize);
+	
+	srvDesc.Format = pFenceTexture->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = pFenceTexture->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(pFenceTexture.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, m_uiCbvSrvDescriptorSize);
 
-	srvDesc.Format = tileTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = tileTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = pTileTexture->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = pTileTexture->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(pTileTexture.Get(), &srvDesc, hDescriptor);
 };
 
 void InitDirect3DApp::BuildShadersAndInputLayout()
 {
-	const D3D_SHADER_MACRO alphaTestDefines[] = { "ALPHA_TEST", "1", NULL, NULL };
+	const D3D_SHADER_MACRO defines[] = {"FOG", "1", NULL, NULL};
+	const D3D_SHADER_MACRO alphaTestDefines[] = {"FOG", "1", "ALPHA_TEST", "1", NULL, NULL};
 
-	m_shaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
-	m_shaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+	m_shaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
+	m_shaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
+	m_shaders["alphaTestedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
 	
 	m_inputLayout =
     {
@@ -721,6 +737,8 @@ void InitDirect3DApp::BuildSkullGeometry()
 
 void InitDirect3DApp::BuildPipelineStateObjects()
 {
+
+	// PipelineStateObject for opaque objects
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePipelineStateOnjectDesc;
 
 	ZeroMemory(&opaquePipelineStateOnjectDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -747,6 +765,35 @@ void InitDirect3DApp::BuildPipelineStateObjects()
 	opaquePipelineStateOnjectDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	opaquePipelineStateOnjectDesc.DSVFormat = mDepthStencilFormat;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePipelineStateOnjectDesc, IID_PPV_ARGS(&m_pipelineStateObjects["opaque"])));
+
+	// PipelineStateObject for transparent objects
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPipelineStateObject;
+	ZeroMemory(&transparentPipelineStateObject, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	transparentPipelineStateObject = opaquePipelineStateOnjectDesc;
+
+	D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
+	ZeroMemory(&transparencyBlendDesc, sizeof(D3D12_RENDER_TARGET_BLEND_DESC));
+	transparencyBlendDesc.BlendEnable = true;
+	transparencyBlendDesc.LogicOpEnable = false;
+	transparencyBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	transparencyBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	transparencyBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	transparencyBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	transparencyBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	transparentPipelineStateObject.BlendState.RenderTarget[0] = transparencyBlendDesc;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&transparentPipelineStateObject, IID_PPV_ARGS(&m_pipelineStateObjects["transparent"])));
+
+	// PipelineStateObject for alpha tested objects
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPipelieStateobjectsDesc;
+	ZeroMemory(&alphaTestedPipelieStateobjectsDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	alphaTestedPipelieStateobjectsDesc = opaquePipelineStateOnjectDesc;
+	alphaTestedPipelieStateobjectsDesc.PS = { reinterpret_cast<BYTE*>(m_shaders["alphaTestedPS"]->GetBufferPointer()), m_shaders["alphaTestedPS"]->GetBufferSize() };
+	alphaTestedPipelieStateobjectsDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestedPipelieStateobjectsDesc, IID_PPV_ARGS(&m_pipelineStateObjects["alphaTestedPS"])));
 };
 
 void InitDirect3DApp::BuildFrameResources()
@@ -775,16 +822,25 @@ void InitDirect3DApp::BuildMaterials()
 	stone0->m_fresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	stone0->m_fRoughness = 0.3f;
 
+	auto fence = std::make_unique<Material>();
+	fence->m_strName = "fence";
+	fence->m_iMaterialConstantBufferIndex = 2;
+	fence->m_iDiffuseSrvHeapIndex = 2;
+	fence->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	fence->m_fresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	fence->m_fRoughness = 0.25f;
+
 	auto tile0 = std::make_unique<Material>();
 	tile0->m_strName = "tile0";
-	tile0->m_iMaterialConstantBufferIndex = 2;
-	tile0->m_iDiffuseSrvHeapIndex = 2;
+	tile0->m_iMaterialConstantBufferIndex = 3;
+	tile0->m_iDiffuseSrvHeapIndex = 3;
 	tile0->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	tile0->m_fresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
 	tile0->m_fRoughness = 0.3f;
 
 	m_materials["bricks0"] = std::move(bricks0);
 	m_materials["stone0"] = std::move(stone0);
+	m_materials["fence"] = std::move(fence);
 	m_materials["tile0"] = std::move(tile0);
 };
 
@@ -794,7 +850,7 @@ void InitDirect3DApp::BuildRenderItems()
 	XMStoreFloat4x4(&boxRitem->m_worldMatrix, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 1.0f, 0.0f));
 	XMStoreFloat4x4(&boxRitem->m_textureTransformMatrix, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	boxRitem->m_uiObjectConstantBufferIndex = 0;
-	boxRitem->m_pxMaterial = m_materials["stone0"].get();
+	boxRitem->m_pxMaterial = m_materials["fence"].get();
 	boxRitem->m_pxGeometry = m_geometries["shapeGeo"].get();
 	boxRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	boxRitem->m_uiIndexCount = boxRitem->m_pxGeometry->m_drawArgs["box"].m_uiIndexCount;
