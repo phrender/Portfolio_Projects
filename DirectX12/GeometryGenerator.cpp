@@ -142,8 +142,8 @@ GeometryGenerator::MeshData GeometryGenerator::CreateSphere(float radius, uint32
 			XMVECTOR p = XMLoadFloat3(&v.m_position);
 			XMStoreFloat3(&v.m_normal, XMVector3Normalize(p));
 
-			v.m_texC.x = theta / XM_2PI;
-			v.m_texC.y = phi / XM_PI;
+			v.m_textureCoord.x = theta / XM_2PI;
+			v.m_textureCoord.y = phi / XM_PI;
 
 			meshData.m_vertices.push_back( v );
 		};
@@ -280,8 +280,8 @@ GeometryGenerator::Vertex GeometryGenerator::MidPoint(const Vertex& v0, const Ve
     XMVECTOR tan0 = XMLoadFloat3(&v0.m_tangentU);
     XMVECTOR tan1 = XMLoadFloat3(&v1.m_tangentU);
 
-    XMVECTOR tex0 = XMLoadFloat2(&v0.m_texC);
-    XMVECTOR tex1 = XMLoadFloat2(&v1.m_texC);
+    XMVECTOR tex0 = XMLoadFloat2(&v0.m_textureCoord);
+    XMVECTOR tex1 = XMLoadFloat2(&v1.m_textureCoord);
 
     // Compute the midpoints of all the attributes.  Vectors need to be normalized
     // since linear interpolating can make them not unit length.  
@@ -294,7 +294,7 @@ GeometryGenerator::Vertex GeometryGenerator::MidPoint(const Vertex& v0, const Ve
     XMStoreFloat3(&v.m_position, pos);
     XMStoreFloat3(&v.m_normal, normal);
     XMStoreFloat3(&v.m_tangentU, tangent);
-    XMStoreFloat2(&v.m_texC, tex);
+    XMStoreFloat2(&v.m_textureCoord, tex);
 
     return v;
 }
@@ -363,8 +363,8 @@ GeometryGenerator::MeshData GeometryGenerator::CreateGeosphere(float radius, uin
 
 		float phi = acosf(meshData.m_vertices[i].m_position.y / radius);
 
-		meshData.m_vertices[i].m_texC.x = theta/XM_2PI;
-		meshData.m_vertices[i].m_texC.y = phi/XM_PI;
+		meshData.m_vertices[i].m_textureCoord.x = theta/XM_2PI;
+		meshData.m_vertices[i].m_textureCoord.y = phi/XM_PI;
 
 		// Partial derivative of P with respect to theta
 		meshData.m_vertices[i].m_tangentU.x = -radius*sinf(phi)*sinf(theta);
@@ -410,8 +410,8 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float bottomRadius
 
 			vertex.m_position = XMFLOAT3(r*c, y, r*s);
 
-			vertex.m_texC.x = (float)j/sliceCount;
-			vertex.m_texC.y = 1.0f - (float)i/stackCount;
+			vertex.m_textureCoord.x = (float)j/sliceCount;
+			vertex.m_textureCoord.y = 1.0f - (float)i/stackCount;
 
 			// Cylinder can be parameterized as follows, where we introduce v
 			// parameter that goes in the same direction as the v tex-coord
@@ -578,8 +578,8 @@ GeometryGenerator::MeshData GeometryGenerator::CreateGrid(float width, float dep
 			meshData.m_vertices[i*n+j].m_tangentU = XMFLOAT3(1.0f, 0.0f, 0.0f);
 
 			// Stretch texture over grid.
-			meshData.m_vertices[i*n+j].m_texC.x = j*du;
-			meshData.m_vertices[i*n+j].m_texC.y = i*dv;
+			meshData.m_vertices[i*n+j].m_textureCoord.x = j*du;
+			meshData.m_vertices[i*n+j].m_textureCoord.y = i*dv;
 		};
 	};
  
