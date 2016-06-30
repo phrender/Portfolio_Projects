@@ -42,6 +42,7 @@ struct Vertex
 {
     DirectX::XMFLOAT3 m_position;
     DirectX::XMFLOAT3 m_normal;
+	DirectX::XMFLOAT2 m_textureCoord;
 };
 
 // Stores the resources needed for the CPU to build the command lists

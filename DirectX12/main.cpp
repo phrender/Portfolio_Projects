@@ -64,7 +64,9 @@ class InitDirect3DApp : public D3DApp
 		void UpdateMaterialConstantBuffers(const GameTimer& kGameTimer);
 		void UpdateMainPassConstantBuffer(const GameTimer& kGameTimer);
 	
+		void LoadTextures();
 	    void BuildRootSignature();
+		void BuildDescriptorHeaps();
 	    void BuildShadersAndInputLayout();
 	    void BuildShapeGeometry();
 		void BuildSkullGeometry();
@@ -73,12 +75,14 @@ class InitDirect3DApp : public D3DApp
 	    void BuildMaterials();
 	    void BuildRenderItems();
 	    void DrawRenderItems(ID3D12GraphicsCommandList* pGraphicsCommandList, const std::vector<RenderItem*>& kRenderItems);
+
+		std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 	 
 	private:
 		
 	    ComPtr<ID3D12RootSignature> m_pxRootSignature;
 		ComPtr<ID3D12DescriptorHeap> m_pxSrvDescriptorHeap;
-		ComPtr<ID3D12PipelineState> m_pxOpaquePipelineStateObject;
+		//ComPtr<ID3D12PipelineState> m_pxOpaquePipelineStateObject;
 	
 		FrameResource* m_pxCurrentFrameResource;
 
@@ -86,6 +90,7 @@ class InitDirect3DApp : public D3DApp
 		std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
 		std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 		std::unordered_map<std::string, ComPtr<ID3DBlob>> m_shaders;
+		std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_pipelineStateObjects;
 		
 		std::vector<std::unique_ptr<FrameResource>> m_frameResources;
 		std::vector<D3D12_INPUT_ELEMENT_DESC> m_inputLayout;
@@ -113,7 +118,7 @@ InitDirect3DApp::InitDirect3DApp(HINSTANCE hInstance) : D3DApp(hInstance)
 {
 	m_pxRootSignature = nullptr;
 	m_pxSrvDescriptorHeap = nullptr;
-	m_pxOpaquePipelineStateObject = nullptr;
+	//m_pxOpaquePipelineStateObject = nullptr;
 	m_pxCurrentFrameResource = nullptr;
 
 	m_viewMatrix = MathHelper::Identity4x4();
@@ -147,7 +152,9 @@ bool InitDirect3DApp::Initialize()
 	// so we have to query this information.
 	m_uiCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+	LoadTextures();
     BuildRootSignature();
+	BuildDescriptorHeaps();
     BuildShadersAndInputLayout();
     BuildShapeGeometry();
 	BuildSkullGeometry();
@@ -203,57 +210,60 @@ void InitDirect3DApp::Update(const GameTimer& kGameTimer)
 
 void InitDirect3DApp::Draw(const GameTimer& kGameTimer)
 {
-    auto cmdListAlloc = m_pxCurrentFrameResource->m_pxCommandListAllocator;
+	auto cmdListAlloc = m_pxCurrentFrameResource->m_pxCommandListAllocator;
 
-    // Reuse the memory associated with command recording.
-    // We can only reset when the associated command lists have finished execution on the GPU.
-    ThrowIfFailed(cmdListAlloc->Reset());
+	// Reuse the memory associated with command recording.
+	// We can only reset when the associated command lists have finished execution on the GPU.
+	ThrowIfFailed(cmdListAlloc->Reset());
 
-    // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
-    // Reusing the command list reuses memory.
-    ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), m_pxOpaquePipelineStateObject.Get()));
+	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
+	// Reusing the command list reuses memory.
+	ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), m_pipelineStateObjects["opaque"].Get()));
 
-    mCommandList->RSSetViewports(1, &mScreenViewport);
-    mCommandList->RSSetScissorRects(1, &mScissorRect);
+	mCommandList->RSSetViewports(1, &mScreenViewport);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-    // Indicate a state transition on the resource usage.
+	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-    // Clear the back buffer and depth buffer.
-    mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
-    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	// Clear the back buffer and depth buffer.
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-    // Specify the buffers we are going to render to.
-    mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+	// Specify the buffers we are going to render to.
+	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_pxSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	mCommandList->SetGraphicsRootSignature(m_pxRootSignature.Get());
 
 	auto passCB = m_pxCurrentFrameResource->m_pxPassConstantBuffer->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-    DrawRenderItems(mCommandList.Get(), m_opaqueRenderItems);
+	DrawRenderItems(mCommandList.Get(), m_opaqueRenderItems);
 
-    // Indicate a state transition on the resource usage.
+	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-    // Done recording commands.
-    ThrowIfFailed(mCommandList->Close());
+	// Done recording commands.
+	ThrowIfFailed(mCommandList->Close());
 
-    // Add the command list to the queue for execution.
-    ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
-    mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	// Add the command list to the queue for execution.
+	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-    // Swap the back and front buffers
-    ThrowIfFailed(mSwapChain->Present(0, 0));
+	// Swap the back and front buffers
+	ThrowIfFailed(mSwapChain->Present(0, 0));
 	mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
 
-    // Advance the fence value to mark commands up to this fence point.
-	m_pxCurrentFrameResource->m_ui64Fence= ++mCurrentFence;
+	// Advance the fence value to mark commands up to this fence point.
+	m_pxCurrentFrameResource->m_ui64Fence = ++mCurrentFence;
 
-    // Add an instruction to the command queue to set a new fence point. 
-    // Because we are on the GPU timeline, the new fence point won't be 
-    // set until the GPU finishes processing all the commands prior to this Signal().
-    mCommandQueue->Signal(mFence.Get(), mCurrentFence);
+	// Add an instruction to the command queue to set a new fence point. 
+	// Because we are on the GPU timeline, the new fence point won't be 
+	// set until the GPU finishes processing all the commands prior to this Signal().
+	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 };
 
 void InitDirect3DApp::OnMouseDown(WPARAM btnState, int iPositionX, int iPositionY)
@@ -410,18 +420,46 @@ void InitDirect3DApp::UpdateMainPassConstantBuffer(const GameTimer& kGameTimer)
 	currPassCB->CopyData(0, m_mainPassConstantBuffer);
 };
 
+void InitDirect3DApp::LoadTextures()
+{
+	auto pBricksTexture = std::make_unique<Texture>();
+	pBricksTexture->m_strName = "bricksTexture";
+	pBricksTexture->m_wstrFilename = L"../../Textures/bricks.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pBricksTexture->m_wstrFilename.c_str(), pBricksTexture->m_pxResource, pBricksTexture->m_pxUploadHeap));
+
+	auto pStoneTexture = std::make_unique<Texture>();
+	pStoneTexture->m_strName = "bricksTexture";
+	pStoneTexture->m_wstrFilename = L"../../Textures/stone.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pStoneTexture->m_wstrFilename.c_str(), pStoneTexture->m_pxResource, pStoneTexture->m_pxUploadHeap));
+
+	auto pTileTexture = std::make_unique<Texture>();
+	pTileTexture->m_strName = "bricksTexture";
+	pTileTexture->m_wstrFilename = L"../../Textures/stone.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pTileTexture->m_wstrFilename.c_str(), pTileTexture->m_pxResource, pTileTexture->m_pxUploadHeap));
+
+	m_textures[pBricksTexture->m_strName] = std::move(pBricksTexture);
+	m_textures[pStoneTexture->m_strName] = std::move(pStoneTexture);
+	m_textures[pTileTexture->m_strName] = std::move(pTileTexture);
+};
+
 void InitDirect3DApp::BuildRootSignature()
 {
+	CD3DX12_DESCRIPTOR_RANGE textureTable;
+	textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
 	// Create root CBV.
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsConstantBufferView(2);
+	slotRootParameter[0].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[2].InitAsConstantBufferView(1);
+	slotRootParameter[3].InitAsConstantBufferView(2);
+
+	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	ComPtr<ID3DBlob> pSerializedRootSig = nullptr;
@@ -433,6 +471,37 @@ void InitDirect3DApp::BuildRootSignature()
 	ThrowIfFailed(hr);
 
 	ThrowIfFailed(md3dDevice->CreateRootSignature(0, pSerializedRootSig->GetBufferPointer(), pSerializedRootSig->GetBufferSize(), IID_PPV_ARGS(m_pxRootSignature.GetAddressOf())));
+};
+
+void InitDirect3DApp::BuildDescriptorHeaps()
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptorHandle(m_pxSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	auto pBricksTexture = m_textures["bricksTexture"]->m_pxResource;
+	auto pStoneTexture = m_textures["stoneTexture"]->m_pxResource;
+	auto pTileTexture = m_textures["tileTexture"]->m_pxResource;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+	ZeroMemory(&shaderResourceViewDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+	shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	shaderResourceViewDesc.Format = pBricksTexture->GetDesc().Format;
+	shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+	shaderResourceViewDesc.Texture2D.MipLevels = pBricksTexture->GetDesc().MipLevels;
+	shaderResourceViewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	md3dDevice->CreateShaderResourceView(pBricksTexture.Get(), &shaderResourceViewDesc, hDescriptorHandle);
+
+	// Stone descriptor
+	hDescriptorHandle.Offset(1, m_uiCbvSrvDescriptorSize);
+	shaderResourceViewDesc.Format = pStoneTexture->GetDesc().Format;
+	shaderResourceViewDesc.Texture2D.MipLevels = pStoneTexture->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(pStoneTexture.Get(), &shaderResourceViewDesc, hDescriptorHandle);
+
+	// Tile descriptor
+	hDescriptorHandle.Offset(1, m_uiCbvSrvDescriptorSize);
+	shaderResourceViewDesc.Format = pTileTexture->GetDesc().Format;
+	shaderResourceViewDesc.Texture2D.MipLevels = pTileTexture->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(pTileTexture.Get(), &shaderResourceViewDesc, hDescriptorHandle);
 };
 
 void InitDirect3DApp::BuildShadersAndInputLayout()
@@ -504,24 +573,28 @@ void InitDirect3DApp::BuildShapeGeometry()
 	{
 		vertices[k].m_position = box.m_vertices[i].m_position;
 		vertices[k].m_normal = box.m_vertices[i].m_normal;
+		vertices[k].m_textureCoord = box.m_vertices[i].m_textureCoord;
 	};
 
 	for(size_t i = 0; i < grid.m_vertices.size(); ++i, ++k)
 	{
 		vertices[k].m_position = grid.m_vertices[i].m_position;
 		vertices[k].m_normal = grid.m_vertices[i].m_normal;
+		vertices[k].m_textureCoord = grid.m_vertices[i].m_textureCoord;
 	};
 
 	for(size_t i = 0; i < sphere.m_vertices.size(); ++i, ++k)
 	{
 		vertices[k].m_position = sphere.m_vertices[i].m_position;
 		vertices[k].m_normal = sphere.m_vertices[i].m_normal;
+		vertices[k].m_textureCoord = sphere.m_vertices[i].m_textureCoord;
 	};
 
 	for(size_t i = 0; i < cylinder.m_vertices.size(); ++i, ++k)
 	{
 		vertices[k].m_position = cylinder.m_vertices[i].m_position;
 		vertices[k].m_normal = cylinder.m_vertices[i].m_normal;
+		vertices[k].m_textureCoord = cylinder.m_vertices[i].m_textureCoord;
 	};
 
 	std::vector<std::uint16_t> indices;
@@ -662,7 +735,7 @@ void InitDirect3DApp::BuildPipelineStateObjects()
 	opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
 	opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&m_pxOpaquePipelineStateObject)));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&m_pipelineStateObjects["opaque"])));
 };
 
 void InitDirect3DApp::BuildFrameResources()
@@ -842,6 +915,57 @@ void InitDirect3DApp::DrawRenderItems(ID3D12GraphicsCommandList* pGraphicsComman
 
 		pGraphicsCommandList->DrawIndexedInstanced(renderItem->m_uiIndexCount, 1, renderItem->m_uiStartIndexLocation, renderItem->m_iBaseVertexLocation, 0);
 	};
+};
+
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> InitDirect3DApp::GetStaticSamplers()
+{
+	const CD3DX12_STATIC_SAMPLER_DESC kPointWrap(
+		0,									// shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT,		// filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP);	// addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC kPointClamp(
+		1,									// shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT,		// filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP);	// addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC kLinearWrap(
+		2,									// shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR,	// filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP);	// addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC kLinearClamp(
+		3,									// shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR,	// filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP);	// addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC kAnisotropicWrap(
+		4,									// shaderRegister
+		D3D12_FILTER_ANISOTROPIC,			// filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressW
+		0.0f,								// mipLODBias
+		8);									// maxAnisotropy
+
+	const CD3DX12_STATIC_SAMPLER_DESC kAnisotropicClamp(
+		5,									// shaderRegister
+		D3D12_FILTER_ANISOTROPIC,			// filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressW
+		0.0f,								// mipLODBias
+		8);									// maxAnisotropy
+
+	return { kPointWrap, kPointClamp, kLinearWrap, kLinearClamp, kAnisotropicWrap, kAnisotropicClamp };
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)

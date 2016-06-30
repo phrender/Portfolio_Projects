@@ -28,7 +28,7 @@ class GeometryGenerator
 	        DirectX::XMFLOAT3 m_position;
 	        DirectX::XMFLOAT3 m_normal;
 	        DirectX::XMFLOAT3 m_tangentU;
-	        DirectX::XMFLOAT2 m_texC;
+	        DirectX::XMFLOAT2 m_textureCoord;
 		};
 	
 		struct MeshData
