@@ -20,14 +20,22 @@ struct PassConstants
 	DirectX::XMFLOAT4X4 m_inverseProjectionMatrix = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 m_viewProjectionMatrix = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 m_inverseViewProjectionMatrix = MathHelper::Identity4x4();
+
+	DirectX::XMFLOAT4 m_fogColor = {0.7, 0.7f, 0.7f, 1.0f};
+
     DirectX::XMFLOAT3 m_eyePosition = { 0.0f, 0.0f, 0.0f };
-    float m_fConstantBufferPerObjectPad1 = 0.0f;
+    
     DirectX::XMFLOAT2 m_renderTargetSize = { 0.0f, 0.0f };
     DirectX::XMFLOAT2 m_inverseRenderTargetSize = { 0.0f, 0.0f };
-    float m_fNearZ = 0.0f;
+	DirectX::XMFLOAT2 m_constantBufferPerObjectPad2;
+
+	float m_fConstantBufferPerObjectPad1 = 0.0f;
+	float m_fNearZ = 0.0f;
     float m_fFarZ = 0.0f;
     float m_fTotalTime = 0.0f;
     float m_fDeltaTime = 0.0f;
+	float m_fFogStart = 5.0f;
+	float m_fFogRange = 150.0f;
 
     DirectX::XMFLOAT4 m_ambientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -51,6 +59,7 @@ struct FrameResource
 {
 	public:
 
+		FrameResource(ID3D12Device* pDevice, UINT uiPassCount, UINT uiObjectCount, UINT uiMaterialCount, UINT uiWaveVertexCount);
 		FrameResource(ID3D12Device* pDevice, UINT uiPassCount, UINT uiObjectCount, UINT uiMaterialCount);
 		FrameResource(const FrameResource& kFrameResource) = delete;
 		FrameResource& operator=(const FrameResource& kFrameResource) = delete;
@@ -63,9 +72,11 @@ struct FrameResource
 		// We cannot update a cbuffer until the GPU is done processing the commands
 		// that reference it.  So each frame needs their own cbuffers.
 		// std::unique_ptr<UploadBuffer<FrameConstants>> FrameCB = nullptr;
-		std::unique_ptr<UploadBuffer<PassConstants>> m_pxPassConstantBuffer = nullptr;
-		std::unique_ptr<UploadBuffer<MaterialConstants>> m_pxMaterialConstantBuffer = nullptr;
-		std::unique_ptr<UploadBuffer<ObjectConstants>> m_pxObjectConstantBuffer = nullptr;
+		std::unique_ptr<UploadBuffer<PassConstants>> m_pxPassConstantBuffer;
+		std::unique_ptr<UploadBuffer<MaterialConstants>> m_pxMaterialConstantBuffer;
+		std::unique_ptr<UploadBuffer<ObjectConstants>> m_pxObjectConstantBuffer;
+
+		std::unique_ptr<UploadBuffer<Vertex>> m_pxWavesVertexBuffer;
 
 		// Fence value to mark commands up to this fence point.  This lets us
 		// check if these frame resources are still in use by the GPU.

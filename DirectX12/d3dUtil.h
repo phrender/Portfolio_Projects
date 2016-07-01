@@ -172,6 +172,7 @@ struct MeshGeometry
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbv;
+		ZeroMemory(&vbv, sizeof(D3D12_VERTEX_BUFFER_VIEW));
 		vbv.BufferLocation = m_pxVertexBufferGPU->GetGPUVirtualAddress();
 		vbv.StrideInBytes = m_uiVertexByteStride;
 		vbv.SizeInBytes = m_uiVertexBufferByteSize;
@@ -182,6 +183,7 @@ struct MeshGeometry
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView()const
 	{
 		D3D12_INDEX_BUFFER_VIEW ibv;
+		ZeroMemory(&ibv, sizeof(D3D12_INDEX_BUFFER_VIEW));
 		ibv.BufferLocation = m_pxIndexBufferGPU->GetGPUVirtualAddress();
 		ibv.Format = m_indexFormat;
 		ibv.SizeInBytes = m_uiIndexBufferByteSize;

@@ -3,6 +3,7 @@
 #include "UploadBuffer.h"
 #include "GeometryGenerator.h"
 #include "FrameResource.h"
+#include "Waves.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -36,7 +37,16 @@ struct RenderItem
     UINT m_uiIndexCount = 0;
     UINT m_uiStartIndexLocation = 0;
     int m_iBaseVertexLocation = 0;
-};
+}; // !RenderItem
+
+enum class RenderLayer : int
+{
+	Opaque = 0,
+	Transparent,
+	AlphaTested,
+	
+	Count
+}; // !RenderLayer
 
 class InitDirect3DApp : public D3DApp
 {
@@ -63,6 +73,7 @@ class InitDirect3DApp : public D3DApp
 		void UpdateObjectConstantBuffers(const GameTimer& kGameTimer);
 		void UpdateMaterialConstantBuffers(const GameTimer& kGameTimer);
 		void UpdateMainPassConstantBuffer(const GameTimer& kGameTimer);
+		void UpdateWaves(const GameTimer& kGameTimer);
 	
 		void LoadTextures();
 	    void BuildRootSignature();
@@ -70,6 +81,9 @@ class InitDirect3DApp : public D3DApp
 	    void BuildShadersAndInputLayout();
 	    void BuildShapeGeometry();
 		void BuildSkullGeometry();
+		void BuildLandGeometry();
+		void BuildWavesGeometry();
+		void BuildBoxGeometry();
 	    void BuildPipelineStateObjects();
 	    void BuildFrameResources();
 	    void BuildMaterials();
@@ -77,14 +91,19 @@ class InitDirect3DApp : public D3DApp
 	    void DrawRenderItems(ID3D12GraphicsCommandList* pGraphicsCommandList, const std::vector<RenderItem*>& kRenderItems);
 
 		std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+
+		float GetHillsHeight(float fX, float fZ) const;
+		XMFLOAT3 GetHillsNormal(float fX, float fZ) const;
 	 
 	private:
 		
 	    ComPtr<ID3D12RootSignature> m_pxRootSignature;
 		ComPtr<ID3D12DescriptorHeap> m_pxSrvDescriptorHeap;
-		//ComPtr<ID3D12PipelineState> m_pxOpaquePipelineStateObject;
+
+		std::unique_ptr<Waves> m_pxWaves;
 	
 		FrameResource* m_pxCurrentFrameResource;
+		RenderItem* m_pxWavesRenderItem;
 
 		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_geometries;
 		std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
@@ -96,6 +115,7 @@ class InitDirect3DApp : public D3DApp
 		std::vector<D3D12_INPUT_ELEMENT_DESC> m_inputLayout;
 		std::vector<std::unique_ptr<RenderItem>> m_allRenderItems;
 		std::vector<RenderItem*> m_opaqueRenderItems;
+		std::vector<RenderItem*> m_renderItemLayer[(int)RenderLayer::Count];
 	
 	    PassConstants m_mainPassConstantBuffer;
 	
@@ -112,14 +132,15 @@ class InitDirect3DApp : public D3DApp
 		int m_iCurrentFrameResourceIndex;
 	
 	    POINT m_lastMousePosition;
-};
+}; // !InitDirect3DApp
 
 InitDirect3DApp::InitDirect3DApp(HINSTANCE hInstance) : D3DApp(hInstance)
 {
 	m_pxRootSignature = nullptr;
 	m_pxSrvDescriptorHeap = nullptr;
-	//m_pxOpaquePipelineStateObject = nullptr;
 	m_pxCurrentFrameResource = nullptr;
+
+	m_pxWavesRenderItem = nullptr;
 
 	m_viewMatrix = MathHelper::Identity4x4();
 	m_projectionMatrix = MathHelper::Identity4x4();
@@ -152,14 +173,18 @@ bool InitDirect3DApp::Initialize()
 	// so we have to query this information.
 	m_uiCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+	m_pxWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.0f, 4.0f, 0.2f);
+
 	LoadTextures();
-    BuildRootSignature();
+	BuildRootSignature();
 	BuildDescriptorHeaps();
-    BuildShadersAndInputLayout();
-    BuildShapeGeometry();
+	BuildShadersAndInputLayout();
+	BuildLandGeometry();
+	BuildWavesGeometry();
+	BuildBoxGeometry();
 	BuildMaterials();
-    BuildRenderItems();
-    BuildFrameResources();
+	BuildRenderItems();
+	BuildFrameResources();
 	BuildPipelineStateObjects();
 
     // Execute the initialization commands.
@@ -205,6 +230,7 @@ void InitDirect3DApp::Update(const GameTimer& kGameTimer)
 	UpdateObjectConstantBuffers(kGameTimer);
 	UpdateMaterialConstantBuffers(kGameTimer);
 	UpdateMainPassConstantBuffer(kGameTimer);
+	UpdateWaves(kGameTimer);
 };
 
 void InitDirect3DApp::Draw(const GameTimer& kGameTimer)
@@ -223,24 +249,31 @@ void InitDirect3DApp::Draw(const GameTimer& kGameTimer)
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	// Indicate a state transition on the resource usage.
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), (float*)&m_mainPassConstantBuffer.m_fogColor, 0, nullptr);
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_pxSrvDescriptorHeap.Get() };
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	ID3D12DescriptorHeap* pDescriptorHeaps[] = { m_pxSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(pDescriptorHeaps), pDescriptorHeaps);
 
 	mCommandList->SetGraphicsRootSignature(m_pxRootSignature.Get());
 
 	auto passCB = m_pxCurrentFrameResource->m_pxPassConstantBuffer->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-	DrawRenderItems(mCommandList.Get(), m_opaqueRenderItems);
+	DrawRenderItems(mCommandList.Get(), m_renderItemLayer[(int)RenderLayer::Opaque]);
+
+	mCommandList->SetPipelineState(m_pipelineStateObjects["alphaTested"].Get());
+	DrawRenderItems(mCommandList.Get(), m_renderItemLayer[(int)RenderLayer::AlphaTested]);
+
+	mCommandList->SetPipelineState(m_pipelineStateObjects["transparent"].Get());
+	DrawRenderItems(mCommandList.Get(), m_renderItemLayer[(int)RenderLayer::Transparent]);
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -258,6 +291,7 @@ void InitDirect3DApp::Draw(const GameTimer& kGameTimer)
 
 	// Advance the fence value to mark commands up to this fence point.
 	m_pxCurrentFrameResource->m_ui64Fence = ++mCurrentFence;
+
 
 	// Add an instruction to the command queue to set a new fence point. 
 	// Because we are on the GPU timeline, the new fence point won't be 
@@ -332,6 +366,25 @@ void InitDirect3DApp::UpdateCamera(const GameTimer& kGameTimer)
 
 void InitDirect3DApp::AnimateMaterials(const GameTimer& kGameTimer)
 {
+	auto pWaterMaterial = m_materials["water"].get();
+
+	float& fTU = pWaterMaterial->m_materialTransform(3, 0);
+	float& fTV = pWaterMaterial->m_materialTransform(3, 1);
+
+	fTU += 0.1f * kGameTimer.DeltaTime();
+	fTV += 0.02f * kGameTimer.DeltaTime();
+
+	if (fTU >= 1.0f)
+		{ fTU -= 1.0f; };
+
+	if (fTV >= 1.0f)
+		{ fTV -= 1.0f; };
+
+	pWaterMaterial->m_materialTransform(3, 0);
+	pWaterMaterial->m_materialTransform(3, 1);
+
+	// Material has changed, so need to update cbuffer
+	pWaterMaterial->m_iNumFramesDirty = gNumFrameResources;
 };
 
 void InitDirect3DApp::UpdateObjectConstantBuffers(const GameTimer& kGameTimer)
@@ -419,38 +472,73 @@ void InitDirect3DApp::UpdateMainPassConstantBuffer(const GameTimer& kGameTimer)
 	currPassCB->CopyData(0, m_mainPassConstantBuffer);
 };
 
+void InitDirect3DApp::UpdateWaves(const GameTimer& kGameTimer)
+{
+	static float kfTimerBase = 0.0f;
+
+	if ((mTimer.TotalTime() - kfTimerBase) >= 0.25f)
+	{
+		kfTimerBase += 0.25f;
+
+		int i = MathHelper::Rand(4, m_pxWaves->RowCount() - 5);
+		int j = MathHelper::Rand(4, m_pxWaves->ColumnCount() - 5);
+
+		float fRand = MathHelper::RandF(0.2f, 0.5f);
+
+		m_pxWaves->Disturb(i, j, fRand);
+	};
+
+	m_pxWaves->Update(kGameTimer.DeltaTime());
+
+	auto pCurrentWavesVertexBuffer = m_pxCurrentFrameResource->m_pxWavesVertexBuffer.get();
+	for (int i = 0; i < m_pxWaves->VertexCount(); ++i)
+	{
+		Vertex vertex;
+
+		vertex.m_position = m_pxWaves->Position(i);
+		vertex.m_normal = m_pxWaves->Normal(i);
+
+		vertex.m_textureCoord.x = 0.5f + vertex.m_position.x / m_pxWaves->Width();
+		vertex.m_textureCoord.y = 0.5f - vertex.m_position.z / m_pxWaves->Depth();
+
+		pCurrentWavesVertexBuffer->CopyData(i, vertex);
+	};
+
+	m_pxWavesRenderItem->m_pxGeometry->m_pxVertexBufferGPU = pCurrentWavesVertexBuffer->Resource();
+};
+
 void InitDirect3DApp::LoadTextures()
 {
-	auto pBricksTexture = std::make_unique<Texture>();
-	pBricksTexture->m_strName = "bricksTexture";
-	pBricksTexture->m_wstrFilename = L"Textures/bricks.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pBricksTexture->m_wstrFilename.c_str(), pBricksTexture->m_pxResource, pBricksTexture->m_pxUploadHeap));
+	auto grassTex = std::make_unique<Texture>();
+	grassTex->m_strName = "grassTex";
+	grassTex->m_wstrFilename = L"Data/Textures/grass.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), grassTex->m_wstrFilename.c_str(), grassTex->m_pxResource, grassTex->m_pxUploadHeap));
 
-	auto pStoneTexture = std::make_unique<Texture>();
-	pStoneTexture->m_strName = "stoneTexture";
-	pStoneTexture->m_wstrFilename = L"Textures/stone.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pStoneTexture->m_wstrFilename.c_str(), pStoneTexture->m_pxResource, pStoneTexture->m_pxUploadHeap));
+	auto waterTex = std::make_unique<Texture>();
+	waterTex->m_strName = "waterTex";
+	waterTex->m_wstrFilename = L"Data/Textures/water1.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), waterTex->m_wstrFilename.c_str(), waterTex->m_pxResource, waterTex->m_pxUploadHeap));
 
-	auto pTileTexture = std::make_unique<Texture>();
-	pTileTexture->m_strName = "tileTexture";
-	pTileTexture->m_wstrFilename = L"Textures/stone.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), pTileTexture->m_wstrFilename.c_str(), pTileTexture->m_pxResource, pTileTexture->m_pxUploadHeap));
-
-	m_textures[pBricksTexture->m_strName] = std::move(pBricksTexture);
-	m_textures[pStoneTexture->m_strName] = std::move(pStoneTexture);
-	m_textures[pTileTexture->m_strName] = std::move(pTileTexture);
+	auto fenceTex = std::make_unique<Texture>();
+	fenceTex->m_strName = "fenceTex";
+	fenceTex->m_wstrFilename = L"Data/Textures/WireFence.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), fenceTex->m_wstrFilename.c_str(), fenceTex->m_pxResource, fenceTex->m_pxUploadHeap)); 
+	
+	m_textures[grassTex->m_strName] = std::move(grassTex);
+	m_textures[waterTex->m_strName] = std::move(waterTex);
+	m_textures[fenceTex->m_strName] = std::move(fenceTex);
 };
 
 void InitDirect3DApp::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE textureTable;
-	textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE textureTableDesc;
+	textureTableDesc.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
-	// Create root CBV.
-	slotRootParameter[0].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[0].InitAsDescriptorTable(1, &textureTableDesc, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsConstantBufferView(1);
 	slotRootParameter[3].InitAsConstantBufferView(2);
@@ -461,69 +549,235 @@ void InitDirect3DApp::BuildRootSignature()
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-	ComPtr<ID3DBlob> pSerializedRootSig = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, pSerializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+	ComPtr<ID3DBlob> pSerializedRootSignature = nullptr;
+	ComPtr<ID3DBlob> pErrorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, pSerializedRootSignature.GetAddressOf(), pErrorBlob.GetAddressOf());
 
-	if(errorBlob != nullptr)
-		{ OutputDebugStringA((char*)errorBlob->GetBufferPointer()); }
+	if (pErrorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)pErrorBlob->GetBufferPointer());
+	}
 	ThrowIfFailed(hr);
 
-	ThrowIfFailed(md3dDevice->CreateRootSignature(0, pSerializedRootSig->GetBufferPointer(), pSerializedRootSig->GetBufferSize(), IID_PPV_ARGS(m_pxRootSignature.GetAddressOf())));
+	ThrowIfFailed(md3dDevice->CreateRootSignature(0, pSerializedRootSignature->GetBufferPointer(), pSerializedRootSignature->GetBufferSize(), IID_PPV_ARGS(m_pxRootSignature.GetAddressOf())));
 };
 
 void InitDirect3DApp::BuildDescriptorHeaps()
 {
-	D3D12_DESCRIPTOR_HEAP_DESC shaderResourceViewHeapDesc;
-	ZeroMemory(&shaderResourceViewHeapDesc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
+	//
+	// Create the SRV heap.
+	//
+	D3D12_DESCRIPTOR_HEAP_DESC shaderResourceViewHeapDesc = {};
 	shaderResourceViewHeapDesc.NumDescriptors = 3;
 	shaderResourceViewHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	shaderResourceViewHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&shaderResourceViewHeapDesc, IID_PPV_ARGS(&m_pxSrvDescriptorHeap)));
-	
+
+	//
+	// Fill out the heap with actual descriptors.
+	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_pxSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto bricksTex = m_textures["bricksTexture"]->m_pxResource;
-	auto stoneTex = m_textures["stoneTexture"]->m_pxResource;
-	auto tileTex = m_textures["tileTexture"]->m_pxResource;
+	auto grassTex = m_textures["grassTex"]->m_pxResource;
+	auto waterTex = m_textures["waterTex"]->m_pxResource;
+	auto fenceTex = m_textures["fenceTex"]->m_pxResource;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = bricksTex->GetDesc().Format;
+	srvDesc.Format = grassTex->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = bricksTex->GetDesc().MipLevels;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Texture2D.MipLevels = -1;
+	md3dDevice->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, m_uiCbvSrvDescriptorSize);
 
-	srvDesc.Format = stoneTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = stoneTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(stoneTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = waterTex->GetDesc().Format;
+	md3dDevice->CreateShaderResourceView(waterTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, m_uiCbvSrvDescriptorSize);
 
-	srvDesc.Format = tileTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = tileTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = fenceTex->GetDesc().Format;
+	md3dDevice->CreateShaderResourceView(fenceTex.Get(), &srvDesc, hDescriptor);
 };
 
 void InitDirect3DApp::BuildShadersAndInputLayout()
 {
-	const D3D_SHADER_MACRO alphaTestDefines[] = { "ALPHA_TEST", "1", NULL, NULL };
+	const D3D_SHADER_MACRO defines[] = { "FOG", "1", NULL, NULL };
 
-	m_shaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
-	m_shaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
-	
+	const D3D_SHADER_MACRO alphaTestDefines[] = { "FOG", "1", "ALPHA_TEST", "1", NULL, NULL };
+
+	m_shaders["standardVS"] = d3dUtil::CompileShader(L"Data\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
+	m_shaders["opaquePS"] = d3dUtil::CompileShader(L"Data\\Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
+	m_shaders["alphaTestedPS"] = d3dUtil::CompileShader(L"Data\\Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
+
 	m_inputLayout =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-    };
+	};
+};
+
+void InitDirect3DApp::BuildLandGeometry()
+{
+
+	GeometryGenerator geometryGenerator;
+	GeometryGenerator::MeshData grid = geometryGenerator.CreateGrid(160.0f, 160.0f, 50, 50);
+
+	//
+	// Extract the vertex elements we are interested and apply the height function to
+	// each vertex.  In addition, color the vertices based on their height so we have
+	// sandy looking beaches, grassy low hills, and snow mountain peaks.
+	//
+
+	std::vector<Vertex> vertices(grid.m_vertices.size());
+	for (size_t i = 0; i < grid.m_vertices.size(); ++i)
+	{
+		auto& p = grid.m_vertices[i].m_position;
+		vertices[i].m_position = p;
+		vertices[i].m_position.y = GetHillsHeight(p.x, p.z);
+		vertices[i].m_normal = GetHillsNormal(p.x, p.z);
+		vertices[i].m_textureCoord = grid.m_vertices[i].m_textureCoord;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+
+	std::vector<std::uint16_t> indices = grid.GetIndices16();
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->m_strName = "landGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->m_pxVertexBufferCPU));
+	CopyMemory(geo->m_pxVertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->m_pxIndexBufferCPU));
+	CopyMemory(geo->m_pxIndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->m_pxVertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->m_pxVertexBufferUploader);
+
+	geo->m_pxIndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->m_pxIndexBufferUploader);
+
+	geo->m_uiVertexByteStride = sizeof(Vertex);
+	geo->m_uiVertexBufferByteSize = vbByteSize;
+	geo->m_indexFormat = DXGI_FORMAT_R16_UINT;
+	geo->m_uiIndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.m_uiIndexCount = (UINT)indices.size();
+	submesh.m_uiStartIndexLocation = 0;
+	submesh.m_iBaseVertexLocation = 0;
+
+	geo->m_drawArgs["grid"] = submesh;
+
+	m_geometries["landGeo"] = std::move(geo);
+
+};
+
+void InitDirect3DApp::BuildWavesGeometry()
+{
+	std::vector<std::uint16_t> indices(3 * m_pxWaves->TriangleCount()); // 3 indices per face
+	assert(m_pxWaves->VertexCount() < 0x0000ffff);
+
+	// Iterate over each quad.
+	int m = m_pxWaves->RowCount();
+	int n = m_pxWaves->ColumnCount();
+	int k = 0;
+	for (int i = 0; i < m - 1; ++i)
+	{
+		for (int j = 0; j < n - 1; ++j)
+		{
+			indices[k] = i*n + j;
+			indices[k + 1] = i*n + j + 1;
+			indices[k + 2] = (i + 1)*n + j;
+
+			indices[k + 3] = (i + 1)*n + j;
+			indices[k + 4] = i*n + j + 1;
+			indices[k + 5] = (i + 1)*n + j + 1;
+
+			k += 6; // next quad
+		}
+	}
+
+	UINT vbByteSize = m_pxWaves->VertexCount() * sizeof(Vertex);
+	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->m_strName = "waterGeo";
+
+	// Set dynamically.
+	geo->m_pxVertexBufferCPU = nullptr;
+	geo->m_pxVertexBufferGPU = nullptr;
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->m_pxIndexBufferCPU));
+	CopyMemory(geo->m_pxIndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->m_pxIndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->m_pxIndexBufferUploader);
+
+	geo->m_uiVertexByteStride = sizeof(Vertex);
+	geo->m_uiVertexBufferByteSize = vbByteSize;
+	geo->m_indexFormat = DXGI_FORMAT_R16_UINT;
+	geo->m_uiIndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.m_uiIndexCount = (UINT)indices.size();
+	submesh.m_uiStartIndexLocation = 0;
+	submesh.m_iBaseVertexLocation = 0;
+
+	geo->m_drawArgs["grid"] = submesh;
+
+	m_geometries["waterGeo"] = std::move(geo);
+};
+
+void InitDirect3DApp::BuildBoxGeometry()
+{
+	GeometryGenerator geometryGenerator;
+	GeometryGenerator::MeshData box = geometryGenerator.CreateBox(8.0f, 8.0f, 8.0f, 3);
+
+	std::vector<Vertex> vertices(box.m_vertices.size());
+	for (size_t i = 0; i < box.m_vertices.size(); ++i)
+	{
+		auto& p = box.m_vertices[i].m_position;
+		vertices[i].m_position = p;
+		vertices[i].m_normal = box.m_vertices[i].m_normal;
+		vertices[i].m_textureCoord = box.m_vertices[i].m_textureCoord;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+
+	std::vector<std::uint16_t> indices = box.GetIndices16();
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->m_strName = "boxGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->m_pxVertexBufferCPU));
+	CopyMemory(geo->m_pxVertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->m_pxIndexBufferCPU));
+	CopyMemory(geo->m_pxIndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->m_pxVertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->m_pxVertexBufferUploader);
+
+	geo->m_pxIndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->m_pxIndexBufferUploader);
+
+	geo->m_uiVertexByteStride = sizeof(Vertex);
+	geo->m_uiVertexBufferByteSize = vbByteSize;
+	geo->m_indexFormat = DXGI_FORMAT_R16_UINT;
+	geo->m_uiIndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.m_uiIndexCount = (UINT)indices.size();
+	submesh.m_uiStartIndexLocation = 0;
+	submesh.m_iBaseVertexLocation = 0;
+
+	geo->m_drawArgs["box"] = submesh;
+
+	m_geometries["boxGeo"] = std::move(geo);
 };
 
 void InitDirect3DApp::BuildShapeGeometry()
@@ -721,32 +975,69 @@ void InitDirect3DApp::BuildSkullGeometry()
 
 void InitDirect3DApp::BuildPipelineStateObjects()
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePipelineStateOnjectDesc;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
-	ZeroMemory(&opaquePipelineStateOnjectDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	opaquePipelineStateOnjectDesc.InputLayout = { m_inputLayout.data(), (UINT)m_inputLayout.size() };
-	opaquePipelineStateOnjectDesc.pRootSignature = m_pxRootSignature.Get();
-	opaquePipelineStateOnjectDesc.VS =
+	//
+	// PSO for opaque objects.
+	//
+	ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	opaquePsoDesc.InputLayout = { m_inputLayout.data(), (UINT)m_inputLayout.size() };
+	opaquePsoDesc.pRootSignature = m_pxRootSignature.Get();
+	opaquePsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(m_shaders["standardVS"]->GetBufferPointer()),
 		m_shaders["standardVS"]->GetBufferSize()
 	};
-	opaquePipelineStateOnjectDesc.PS =
+	opaquePsoDesc.PS =
 	{
 		reinterpret_cast<BYTE*>(m_shaders["opaquePS"]->GetBufferPointer()),
 		m_shaders["opaquePS"]->GetBufferSize()
 	};
-	opaquePipelineStateOnjectDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	opaquePipelineStateOnjectDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	opaquePipelineStateOnjectDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	opaquePipelineStateOnjectDesc.SampleMask = UINT_MAX;
-	opaquePipelineStateOnjectDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	opaquePipelineStateOnjectDesc.NumRenderTargets = 1;
-	opaquePipelineStateOnjectDesc.RTVFormats[0] = mBackBufferFormat;
-	opaquePipelineStateOnjectDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-	opaquePipelineStateOnjectDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-	opaquePipelineStateOnjectDesc.DSVFormat = mDepthStencilFormat;
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePipelineStateOnjectDesc, IID_PPV_ARGS(&m_pipelineStateObjects["opaque"])));
+	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.SampleMask = UINT_MAX;
+	opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	opaquePsoDesc.NumRenderTargets = 1;
+	opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
+	opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+	opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
+	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&m_pipelineStateObjects["opaque"])));
+
+	//
+	// PSO for transparent objects
+	//
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = opaquePsoDesc;
+
+	D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
+	transparencyBlendDesc.BlendEnable = true;
+	transparencyBlendDesc.LogicOpEnable = false;
+	transparencyBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	transparencyBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	transparencyBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	transparencyBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	transparencyBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_pipelineStateObjects["transparent"])));
+
+	//
+	// PSO for alpha tested objects
+	//
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = opaquePsoDesc;
+	alphaTestedPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["alphaTestedPS"]->GetBufferPointer()),
+		m_shaders["alphaTestedPS"]->GetBufferSize()
+	};
+	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&m_pipelineStateObjects["alphaTested"])));
 };
 
 void InitDirect3DApp::BuildFrameResources()
@@ -759,136 +1050,91 @@ void InitDirect3DApp::BuildFrameResources()
 
 void InitDirect3DApp::BuildMaterials()
 {
-	auto bricks0 = std::make_unique<Material>();
-	bricks0->m_strName = "bricks0";
-	bricks0->m_iMaterialConstantBufferIndex = 0;
-	bricks0->m_iDiffuseSrvHeapIndex = 0;
-	bricks0->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	bricks0->m_fresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
-	bricks0->m_fRoughness = 0.1f;
+	auto grass = std::make_unique<Material>();
+	grass->m_strName = "grass";
+	grass->m_iMaterialConstantBufferIndex = 0;
+	grass->m_iDiffuseSrvHeapIndex = 0;
+	grass->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	grass->m_fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	grass->m_fRoughness = 0.125f;
 
-	auto stone0 = std::make_unique<Material>();
-	stone0->m_strName = "stone0";
-	stone0->m_iMaterialConstantBufferIndex = 1;
-	stone0->m_iDiffuseSrvHeapIndex = 1;
-	stone0->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	stone0->m_fresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	stone0->m_fRoughness = 0.3f;
+	// This is not a good water material definition, but we do not have all the rendering
+	// tools we need (transparency, environment reflection), so we fake it for now.
+	auto water = std::make_unique<Material>();
+	water->m_strName = "water";
+	water->m_iMaterialConstantBufferIndex = 1;
+	water->m_iDiffuseSrvHeapIndex = 1;
+	water->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
+	water->m_fresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	water->m_fRoughness = 0.0f;
 
-	auto tile0 = std::make_unique<Material>();
-	tile0->m_strName = "tile0";
-	tile0->m_iMaterialConstantBufferIndex = 2;
-	tile0->m_iDiffuseSrvHeapIndex = 2;
-	tile0->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	tile0->m_fresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
-	tile0->m_fRoughness = 0.3f;
+	auto wirefence = std::make_unique<Material>();
+	wirefence->m_strName = "wirefence";
+	wirefence->m_iMaterialConstantBufferIndex = 2;
+	wirefence->m_iDiffuseSrvHeapIndex = 2;
+	wirefence->m_diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	wirefence->m_fresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	wirefence->m_fRoughness = 0.25f;
 
-	m_materials["bricks0"] = std::move(bricks0);
-	m_materials["stone0"] = std::move(stone0);
-	m_materials["tile0"] = std::move(tile0);
+	m_materials["grass"] = std::move(grass);
+	m_materials["water"] = std::move(water);
+	m_materials["wirefence"] = std::move(wirefence);
 };
 
 void InitDirect3DApp::BuildRenderItems()
 {
-	auto boxRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&boxRitem->m_worldMatrix, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 1.0f, 0.0f));
-	XMStoreFloat4x4(&boxRitem->m_textureTransformMatrix, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	boxRitem->m_uiObjectConstantBufferIndex = 0;
-	boxRitem->m_pxMaterial = m_materials["stone0"].get();
-	boxRitem->m_pxGeometry = m_geometries["shapeGeo"].get();
-	boxRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->m_uiIndexCount = boxRitem->m_pxGeometry->m_drawArgs["box"].m_uiIndexCount;
-	boxRitem->m_uiStartIndexLocation = boxRitem->m_pxGeometry->m_drawArgs["box"].m_uiStartIndexLocation;
-	boxRitem->m_iBaseVertexLocation = boxRitem->m_pxGeometry->m_drawArgs["box"].m_iBaseVertexLocation;
-	m_allRenderItems.push_back(std::move(boxRitem));
+	auto wavesRitem = std::make_unique<RenderItem>();
+	wavesRitem->m_worldMatrix = MathHelper::Identity4x4();
+	XMStoreFloat4x4(&wavesRitem->m_textureTransformMatrix, XMMatrixScaling(5.0f, 5.0f, 1.0f));
+	wavesRitem->m_uiObjectConstantBufferIndex = 0;
+	wavesRitem->m_pxMaterial = m_materials["water"].get();
+	wavesRitem->m_pxGeometry = m_geometries["waterGeo"].get();
+	wavesRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	wavesRitem->m_uiIndexCount = wavesRitem->m_pxGeometry->m_drawArgs["grid"].m_uiIndexCount;
+	wavesRitem->m_uiStartIndexLocation = wavesRitem->m_pxGeometry->m_drawArgs["grid"].m_uiStartIndexLocation;
+	wavesRitem->m_iBaseVertexLocation = wavesRitem->m_pxGeometry->m_drawArgs["grid"].m_iBaseVertexLocation;
+
+	m_pxWavesRenderItem = wavesRitem.get();
+
+	m_renderItemLayer[(int)RenderLayer::Transparent].push_back(wavesRitem.get());
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->m_worldMatrix = MathHelper::Identity4x4();
-	XMStoreFloat4x4(&gridRitem->m_textureTransformMatrix, XMMatrixScaling(8.0f, 8.0f, 1.0f));
+	XMStoreFloat4x4(&gridRitem->m_textureTransformMatrix, XMMatrixScaling(5.0f, 5.0f, 1.0f));
 	gridRitem->m_uiObjectConstantBufferIndex = 1;
-	gridRitem->m_pxMaterial = m_materials["tile0"].get();
-	gridRitem->m_pxGeometry = m_geometries["shapeGeo"].get();
+	gridRitem->m_pxMaterial = m_materials["grass"].get();
+	gridRitem->m_pxGeometry = m_geometries["landGeo"].get();
 	gridRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	gridRitem->m_uiIndexCount = gridRitem->m_pxGeometry->m_drawArgs["grid"].m_uiIndexCount;
 	gridRitem->m_uiStartIndexLocation = gridRitem->m_pxGeometry->m_drawArgs["grid"].m_uiStartIndexLocation;
 	gridRitem->m_iBaseVertexLocation = gridRitem->m_pxGeometry->m_drawArgs["grid"].m_iBaseVertexLocation;
+
+	m_renderItemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
+
+	auto boxRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&boxRitem->m_worldMatrix, XMMatrixTranslation(3.0f, 2.0f, -9.0f));
+	boxRitem->m_uiObjectConstantBufferIndex = 2;
+	boxRitem->m_pxMaterial = m_materials["wirefence"].get();
+	boxRitem->m_pxGeometry = m_geometries["boxGeo"].get();
+	boxRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem->m_uiIndexCount = boxRitem->m_pxGeometry->m_drawArgs["box"].m_uiIndexCount;
+	boxRitem->m_uiStartIndexLocation = boxRitem->m_pxGeometry->m_drawArgs["box"].m_uiStartIndexLocation;
+	boxRitem->m_iBaseVertexLocation = boxRitem->m_pxGeometry->m_drawArgs["box"].m_iBaseVertexLocation;
+
+	m_renderItemLayer[(int)RenderLayer::AlphaTested].push_back(boxRitem.get());
+
+	m_allRenderItems.push_back(std::move(wavesRitem));
 	m_allRenderItems.push_back(std::move(gridRitem));
-
-	XMMATRIX brickTexTransform = XMMatrixScaling(1.0f, 1.0f, 1.0f);
-	UINT objCBIndex = 2;
-	for (int i = 0; i < 5; ++i)
-	{
-		auto leftCylRitem = std::make_unique<RenderItem>();
-		auto rightCylRitem = std::make_unique<RenderItem>();
-		auto leftSphereRitem = std::make_unique<RenderItem>();
-		auto rightSphereRitem = std::make_unique<RenderItem>();
-
-		XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i*5.0f);
-		XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i*5.0f);
-
-		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i*5.0f);
-		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i*5.0f);
-
-		XMStoreFloat4x4(&leftCylRitem->m_worldMatrix, rightCylWorld);
-		XMStoreFloat4x4(&leftCylRitem->m_textureTransformMatrix, brickTexTransform);
-		leftCylRitem->m_uiObjectConstantBufferIndex = objCBIndex++;
-		leftCylRitem->m_pxMaterial = m_materials["bricks0"].get();
-		leftCylRitem->m_pxGeometry = m_geometries["shapeGeo"].get();
-		leftCylRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftCylRitem->m_uiIndexCount = leftCylRitem->m_pxGeometry->m_drawArgs["cylinder"].m_uiIndexCount;
-		leftCylRitem->m_uiStartIndexLocation = leftCylRitem->m_pxGeometry->m_drawArgs["cylinder"].m_uiStartIndexLocation;
-		leftCylRitem->m_iBaseVertexLocation = leftCylRitem->m_pxGeometry->m_drawArgs["cylinder"].m_iBaseVertexLocation;
-
-		XMStoreFloat4x4(&rightCylRitem->m_worldMatrix, leftCylWorld);
-		XMStoreFloat4x4(&rightCylRitem->m_textureTransformMatrix, brickTexTransform);
-		rightCylRitem->m_uiObjectConstantBufferIndex = objCBIndex++;
-		rightCylRitem->m_pxMaterial = m_materials["bricks0"].get();
-		rightCylRitem->m_pxGeometry = m_geometries["shapeGeo"].get();
-		rightCylRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightCylRitem->m_uiIndexCount = rightCylRitem->m_pxGeometry->m_drawArgs["cylinder"].m_uiIndexCount;
-		rightCylRitem->m_uiStartIndexLocation = rightCylRitem->m_pxGeometry->m_drawArgs["cylinder"].m_uiStartIndexLocation;
-		rightCylRitem->m_iBaseVertexLocation = rightCylRitem->m_pxGeometry->m_drawArgs["cylinder"].m_iBaseVertexLocation;
-
-		XMStoreFloat4x4(&leftSphereRitem->m_worldMatrix, leftSphereWorld);
-		leftSphereRitem->m_textureTransformMatrix = MathHelper::Identity4x4();
-		leftSphereRitem->m_uiObjectConstantBufferIndex = objCBIndex++;
-		leftSphereRitem->m_pxMaterial = m_materials["stone0"].get();
-		leftSphereRitem->m_pxGeometry = m_geometries["shapeGeo"].get();
-		leftSphereRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftSphereRitem->m_uiIndexCount = leftSphereRitem->m_pxGeometry->m_drawArgs["sphere"].m_uiIndexCount;
-		leftSphereRitem->m_uiStartIndexLocation = leftSphereRitem->m_pxGeometry->m_drawArgs["sphere"].m_uiStartIndexLocation;
-		leftSphereRitem->m_iBaseVertexLocation = leftSphereRitem->m_pxGeometry->m_drawArgs["sphere"].m_iBaseVertexLocation;
-
-		XMStoreFloat4x4(&rightSphereRitem->m_worldMatrix, rightSphereWorld);
-		rightSphereRitem->m_textureTransformMatrix = MathHelper::Identity4x4();
-		rightSphereRitem->m_uiObjectConstantBufferIndex = objCBIndex++;
-		rightSphereRitem->m_pxMaterial = m_materials["stone0"].get();
-		rightSphereRitem->m_pxGeometry = m_geometries["shapeGeo"].get();
-		rightSphereRitem->m_primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightSphereRitem->m_uiIndexCount = rightSphereRitem->m_pxGeometry->m_drawArgs["sphere"].m_uiIndexCount;
-		rightSphereRitem->m_uiStartIndexLocation = rightSphereRitem->m_pxGeometry->m_drawArgs["sphere"].m_uiStartIndexLocation;
-		rightSphereRitem->m_iBaseVertexLocation = rightSphereRitem->m_pxGeometry->m_drawArgs["sphere"].m_iBaseVertexLocation;
-
-		m_allRenderItems.push_back(std::move(leftCylRitem));
-		m_allRenderItems.push_back(std::move(rightCylRitem));
-		m_allRenderItems.push_back(std::move(leftSphereRitem));
-		m_allRenderItems.push_back(std::move(rightSphereRitem));
-	}
-
-	// All the render items are opaque.
-	for (auto& e : m_allRenderItems)
-	{
-		m_opaqueRenderItems.push_back(e.get());
-	};
+	m_allRenderItems.push_back(std::move(boxRitem));
 }
 
 void InitDirect3DApp::DrawRenderItems(ID3D12GraphicsCommandList* pGraphicsCommandList, const std::vector<RenderItem*>& kRenderItems)
 {
-	UINT uiObjConstantBufferByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-	UINT uiMaterialConstantBufferByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
-	auto pObjectConstantBuffer = m_pxCurrentFrameResource->m_pxObjectConstantBuffer->Resource();
-	auto pMaterialConstantBuffer = m_pxCurrentFrameResource->m_pxMaterialConstantBuffer->Resource();
+	auto objectCB = m_pxCurrentFrameResource->m_pxObjectConstantBuffer->Resource();
+	auto matCB = m_pxCurrentFrameResource->m_pxMaterialConstantBuffer->Resource();
 
 	// For each render item...
 	for (size_t i = 0; i < kRenderItems.size(); ++i)
@@ -899,18 +1145,18 @@ void InitDirect3DApp::DrawRenderItems(ID3D12GraphicsCommandList* pGraphicsComman
 		pGraphicsCommandList->IASetIndexBuffer(&renderItem->m_pxGeometry->IndexBufferView());
 		pGraphicsCommandList->IASetPrimitiveTopology(renderItem->m_primitiveType);
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE textureHandler(m_pxSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		textureHandler.Offset(renderItem->m_pxMaterial->m_iDiffuseSrvHeapIndex, m_uiCbvSrvDescriptorSize);
+		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_pxSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		tex.Offset(renderItem->m_pxMaterial->m_iDiffuseSrvHeapIndex, m_uiCbvSrvDescriptorSize);
 
-		D3D12_GPU_VIRTUAL_ADDRESS objectConstantBufferAddress = pObjectConstantBuffer->GetGPUVirtualAddress() + renderItem->m_uiObjectConstantBufferIndex * uiObjConstantBufferByteSize;
-		D3D12_GPU_VIRTUAL_ADDRESS materialConstantBufferAddress = pMaterialConstantBuffer->GetGPUVirtualAddress() + renderItem->m_pxMaterial->m_iMaterialConstantBufferIndex * uiMaterialConstantBufferByteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + renderItem->m_uiObjectConstantBufferIndex * objCBByteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + renderItem->m_pxMaterial->m_iMaterialConstantBufferIndex * matCBByteSize;
 
-		pGraphicsCommandList->SetGraphicsRootDescriptorTable(0, textureHandler);
-		pGraphicsCommandList->SetGraphicsRootConstantBufferView(1, objectConstantBufferAddress);
-		pGraphicsCommandList->SetGraphicsRootConstantBufferView(3, materialConstantBufferAddress);
+		pGraphicsCommandList->SetGraphicsRootDescriptorTable(0, tex);
+		pGraphicsCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+		pGraphicsCommandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		pGraphicsCommandList->DrawIndexedInstanced(renderItem->m_uiIndexCount, 1, renderItem->m_uiStartIndexLocation, renderItem->m_iBaseVertexLocation, 0);
-	};
+	}
 };
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> InitDirect3DApp::GetStaticSamplers()
@@ -962,6 +1208,26 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> InitDirect3DApp::GetStaticSampl
 		8);									// maxAnisotropy
 
 	return { kPointWrap, kPointClamp, kLinearWrap, kLinearClamp, kAnisotropicWrap, kAnisotropicClamp };
+};
+
+float InitDirect3DApp::GetHillsHeight(float fX, float fZ) const
+{
+	return 0.3f * (fZ * sinf(0.1f * fX) + fX * cosf(0.1f * fZ));
+};
+
+XMFLOAT3 InitDirect3DApp::GetHillsNormal(float fX, float fZ) const
+{
+	XMFLOAT3 normal
+			(
+				-0.03f * fZ * cosf(0.1f * fX) - 0.3f * cosf(0.1f * fZ),
+				1.0f,
+				-0.3f * sinf(0.1f * fX) + 0.03f * fX * sinf(0.1f * fZ)
+			);
+
+	XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&normal));
+	XMStoreFloat3(&normal, unitNormal);
+
+	return normal;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
