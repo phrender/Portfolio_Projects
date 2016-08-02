@@ -1,0 +1,7 @@
+﻿Builder Pattern checklist
+
+[ ] - Have lots of products that only differ in thier permutations and the construction code involves a number of sequential steps
+[ ] - Create a concrete builder class for each product type
+[ ] - Design a standard protocol for all build steps
+[ ] - Define a directro that calls the builder methods in the correct order
+[ ] - Make sure the client doesn't use new anywhere and only uses the builder to create new instances.
