@@ -60,6 +60,13 @@
     <Compile Include="Builder\MenuBuilder.cs" />
     <Compile Include="Builder\MenuDirector.cs" />
     <Compile Include="Builder\SaladMenuBuilder.cs" />
+    <Compile Include="Factory Method\Color.cs" />
+    <Compile Include="Factory Method\Firetruck.cs" />
+    <Compile Include="Factory Method\FiretruckCreator.cs" />
+    <Compile Include="Factory Method\Superman.cs" />
+    <Compile Include="Factory Method\SupermanCreator.cs" />
+    <Compile Include="Factory Method\Toy.cs" />
+    <Compile Include="Factory Method\ToyCreator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -68,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Abstract Factory\AbstractFactoryChecklist.txt" />
+    <Content Include="Builder\BuilderPatternChecklist.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
