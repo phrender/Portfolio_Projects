@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="true"
+        jar="E:\Android\SDK\extras\m2repository\com\android\support\constraint\constraint-layout-solver\1.0.0-alpha4\constraint-layout-solver-1.0.0-alpha4.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="a882fef6a6b9e3efbb0b6b001895a5fc7c35b391">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\constraint-layout-solver-1.0.0-alpha4_47759aa4e2ccd4a71d91a764d7b6d4b9e109917a\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support\support-v4\24.1.1\jars\classes.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="6d7d803871e3203465f71a163e7af104f807b446">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\com.android.support-support-v4-24.1.1_15ff906bf98ede11fec484043066dd3600d4f306\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support\design\24.1.1\jars\classes.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="e195bd694d5389acfba27ff4fdfa64c4c65b2c05">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\com.android.support-design-24.1.1_7ba1091f0ec566bbbf4417a7346b7509e01ad870\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support\recyclerview-v7\24.1.1\jars\classes.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="787871951412550519b0222aba3c9df4cea49875">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\com.android.support-recyclerview-v7-24.1.1_78b1bcd8f5fbcd9737bcc436d5ab651849d3413d\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\incremental-runtime-classes\debug\instant-run.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="52ac307251c9472fcf2ec4c7737fe6002030b3a2">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run_0e46557120c87267a840f3dcbd14f57b72ca1539\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support\support-vector-drawable\24.1.1\jars\classes.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="f62e763609f65e47dc6c498760a4accf02776788">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\com.android.support-support-vector-drawable-24.1.1_721acb5ab3f46f5fa82374ab53f883e410464603\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support\animated-vector-drawable\24.1.1\jars\classes.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="c936c1bd42f0c018c18920c7bec619ef056b24f8">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\com.android.support-animated-vector-drawable-24.1.1_be278deb5e3c3fd74fb4154d0851fb2856c9677f\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Android\SDK\extras\android\m2repository\com\android\support\support-annotations\24.1.1\support-annotations-24.1.1.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="3af19f153122737b372622fa6c81dd11a1c6b999">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\support-annotations-24.1.1_54ceeaceaa50854d348921edd1ef502e83d97cbb\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\incremental-classes\debug\instant-run-bootstrap.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="602c54f7d0123c3ede2517c1ff1891f0c0979e43">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run-bootstrap_12137b6ab7751d8aabd4329fb6f342ebc8294e2e\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support.constraint\constraint-layout\1.0.0-alpha4\jars\classes.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="affe29a90a2a709bfd2b8d6411aa99c05a2be96f">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\com.android.support.constraint-constraint-layout-1.0.0-alpha4_82b5d8bf89dcccf620d4572383ccd2262550f53b\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support\appcompat-v7\24.1.1\jars\classes.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="1256c10604bb098490eab070d76754ac5ceab35c">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\com.android.support-appcompat-v7-24.1.1_2fc3a193e0ad1935c37e8a6e15c1b0ae4fbabca9\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\exploded-aar\com.android.support\support-v4\24.1.1\jars\libs\internal_impl-24.1.1.jar"
+        jumboMode="true"
+        optimize="false"
+        revision="24.0.0"
+        sha1="f78c2f395cb096f9dc1dc07e729922b8fcd3c4f5">
+        <dex dex="E:\Workplace\Android\SimpleStopwatch\app\build\intermediates\transforms\dex\debug\folders\1000\10\internal_impl-24.1.1_87be7f4e8fa2a079747c64769521608bd66ae710\classes.dex" />
+    </item>
+
+</items>
