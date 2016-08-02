@@ -1,0 +1,7 @@
+#Sat Jul 30 01:39:36 CEST 2016
+base.0=E\:\\Workplace\\Android\\SimpleStopwatch\\app\\build\\intermediates\\transforms\\dex\\debug\\folders\\1000\\10\\instant-run-bootstrap_12137b6ab7751d8aabd4329fb6f342ebc8294e2e
+renamed.1=classes2.dex
+renamed.0=classes.dex
+file.1=E\:\\Workplace\\Android\\SimpleStopwatch\\app\\build\\intermediates\\transforms\\dex\\debug\\folders\\1000\\10\\instant-run_0e46557120c87267a840f3dcbd14f57b72ca1539\\classes.dex
+base.1=E\:\\Workplace\\Android\\SimpleStopwatch\\app\\build\\intermediates\\transforms\\dex\\debug\\folders\\1000\\10\\instant-run_0e46557120c87267a840f3dcbd14f57b72ca1539
+file.0=E\:\\Workplace\\Android\\SimpleStopwatch\\app\\build\\intermediates\\transforms\\dex\\debug\\folders\\1000\\10\\instant-run-bootstrap_12137b6ab7751d8aabd4329fb6f342ebc8294e2e\\classes.dex
