@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.kevinberglund.timerapp.MainActivity">
+    
+    <TextView
+        android:id="@+id/tvTimeDisplay"
+        android:text="@string/tvStartTime"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:textSize="40sp"
+        android:textColor="#000000"
+        android:textAlignment="center" />
+
+    <Button
+        android:text="@string/btnAtMainStart"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@+id/tvTimeDisplay"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginLeft="20dp"
+        android:textColor="#000000"
+        android:id="@+id/btnStartStop" />
+
+</RelativeLayout>

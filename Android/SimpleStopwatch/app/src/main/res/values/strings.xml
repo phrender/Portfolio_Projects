@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Simple Stopwatch</string>
+
+    <string name="btnAtMainStart">Start</string>
+    <string name="btnAtMainStop">Stop</string>
+
+    <string name="tvStartTime">00:00:00</string>
+
+</resources>
