@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectX12", "DirectX12\DirectX12.vcxproj", "{0D47055B-ECF8-45C9-9C08-0BCABCEDC67C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AlgorithmsAndStructures", "AlgorithmsAndStructures\AlgorithmsAndStructures.vcxproj", "{B787CA7B-A00D-4EF0-86C5-1EBCD5901F84}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CSharp", "CSharp", "{44100673-953E-48CF-B1D1-1310D6A89B09}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{00763729-1EFD-40D2-8F44-87DB796236A9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpDesignPatterns", "CSharpDesignPatterns\CSharpDesignPatterns.csproj", "{6487C45B-56BE-4270-A4FD-05046CD96F56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,8 +47,25 @@ Global
 		{B787CA7B-A00D-4EF0-86C5-1EBCD5901F84}.Release|x64.Build.0 = Release|x64
 		{B787CA7B-A00D-4EF0-86C5-1EBCD5901F84}.Release|x86.ActiveCfg = Release|Win32
 		{B787CA7B-A00D-4EF0-86C5-1EBCD5901F84}.Release|x86.Build.0 = Release|Win32
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Debug|x64.Build.0 = Debug|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Debug|x86.Build.0 = Debug|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Release|x64.ActiveCfg = Release|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Release|x64.Build.0 = Release|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Release|x86.ActiveCfg = Release|Any CPU
+		{6487C45B-56BE-4270-A4FD-05046CD96F56}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0D47055B-ECF8-45C9-9C08-0BCABCEDC67C} = {00763729-1EFD-40D2-8F44-87DB796236A9}
+		{B787CA7B-A00D-4EF0-86C5-1EBCD5901F84} = {00763729-1EFD-40D2-8F44-87DB796236A9}
+		{6487C45B-56BE-4270-A4FD-05046CD96F56} = {44100673-953E-48CF-B1D1-1310D6A89B09}
 	EndGlobalSection
 EndGlobal
