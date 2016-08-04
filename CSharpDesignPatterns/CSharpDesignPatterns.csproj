@@ -61,6 +61,8 @@
     <Compile Include="Builder\MenuDirector.cs" />
     <Compile Include="Builder\SaladMenuBuilder.cs" />
     <Compile Include="Factory Method\Color.cs" />
+    <Compile Include="Factory Method\Duck.cs" />
+    <Compile Include="Factory Method\DuckCreator.cs" />
     <Compile Include="Factory Method\Firetruck.cs" />
     <Compile Include="Factory Method\FiretruckCreator.cs" />
     <Compile Include="Factory Method\Superman.cs" />

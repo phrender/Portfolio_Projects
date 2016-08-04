@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Drawing;
 
 namespace CSharpDesignPatterns.Factory_Method
 {
-    class Superman : Toy
+    class Duck : Toy
     {
         public override int GetPowderQuantity()
         {
@@ -21,7 +20,7 @@ namespace CSharpDesignPatterns.Factory_Method
 
         public override string GetColor()
         {
-            return Color.Blue();
+            return Color.Yellow();
         }
     }
 }

@@ -24,7 +24,7 @@ namespace CSharpDesignPatterns.Factory_Method
 
             ExtractToy();
 
-            Color color = toy.GetColor();
+            string color = toy.GetColor();
             PaintToy(color);
         }
 
@@ -55,9 +55,9 @@ namespace CSharpDesignPatterns.Factory_Method
             Console.WriteLine("Extracting toy");
         }
 
-        private void PaintToy(Color color)
+        private void PaintToy(string color)
         {
-            Console.WriteLine("Painting toy {0}", colorName);
+            Console.WriteLine("Painting toy {0}", color);
         }
 
         #endregion

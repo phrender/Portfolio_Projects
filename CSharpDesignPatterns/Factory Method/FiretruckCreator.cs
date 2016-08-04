@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace CSharpDesignPatterns.Factory_Method
 {
-    class FiretruckCreator
+    class FiretruckCreator : ToyCreator
     {
+        protected override Toy CreateToy()
+        {
+            return new Firetruck();
+        }
     }
 }
