@@ -1,0 +1,6 @@
+﻿Factory Method pattern checklist.
+
+[ ] - Make sure you need control over creation of new objects
+[ ] - Create a concrete factory class for each object
+[ ] - Create a factory class that unifies all concrete factories
+[ ] - Make sure the client doesn't use new anywhere.

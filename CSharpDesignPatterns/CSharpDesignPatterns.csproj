@@ -78,6 +78,7 @@
   <ItemGroup>
     <Content Include="Abstract Factory\AbstractFactoryChecklist.txt" />
     <Content Include="Builder\BuilderPatternChecklist.txt" />
+    <Content Include="Factory Method\FactoryMethodPatternChecklist.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
