@@ -1,0 +1,9 @@
+﻿Singelton pattern checklist
+
+[ ] - Make sure that no class can be the owner of the singelton instance
+[ ] - Make sure you need lazy initialization
+[ ] - Make sure there is no other alternative to provide global access to the singelton
+[ ] - Define a Singelton class with a protected constructor
+[ ] - Add a field member called instance
+[ ] - Add a static property called Instance and use lazy initialization
+[ ] - Change the calling conde to always use the Instance property to access the singelton

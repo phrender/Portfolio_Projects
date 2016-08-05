@@ -9,6 +9,7 @@ using CSharpDesignPatterns.Abstract_Factory;
 using CSharpDesignPatterns.Builder;
 using CSharpDesignPatterns.Factory_Method;
 using CSharpDesignPatterns.Prototype;
+using CSharpDesignPatterns.Singelton;
 
 namespace CSharpDesignPatterns
 {
@@ -81,7 +82,17 @@ namespace CSharpDesignPatterns
             //Prototype.Prototype product2 = client.CreateProduct(prototype2);
 
             #endregion
-            
+
+            #region Singelton pattern
+
+            Logger log = Logger.Instance;
+
+            log.Log(string.Format("Logging started at {0}", DateTime.Now));
+            log.Log("Hello logger!");
+            log.Log(string.Format("Logging ended at {0}", DateTime.Now));
+
+            #endregion
+
         }
     }
 }

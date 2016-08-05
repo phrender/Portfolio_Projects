@@ -76,6 +76,7 @@
     <Compile Include="Prototype\ConcretePrototype1.cs" />
     <Compile Include="Prototype\ConcretePrototype2.cs" />
     <Compile Include="Prototype\Prototype.cs" />
+    <Compile Include="Singelton\Logger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -84,6 +85,7 @@
     <Content Include="Abstract Factory\AbstractFactoryChecklist.txt" />
     <Content Include="Builder\BuilderPatternChecklist.txt" />
     <Content Include="Factory Method\FactoryMethodPatternChecklist.txt" />
+    <Content Include="Prototype\PrototypePatternChecklist.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
