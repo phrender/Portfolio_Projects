@@ -1,0 +1,7 @@
+﻿Adapter pattern checklist
+
+[ ] - Identify all three actors in this pattern (Client, Adaptee and Adapter)
+[ ] - Identify the interface that the client requires and put it in an abstract class
+[ ] - Derive a concrete adapter class form the abstract target
+[ ] - Write an adapter to map the client interface
+[ ] - Modify the client to use the adapter every time it needs to access the adaptee

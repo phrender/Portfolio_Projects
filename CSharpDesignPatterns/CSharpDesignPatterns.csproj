@@ -55,6 +55,10 @@
     <Compile Include="Abstract Factory\Kangaroo.cs" />
     <Compile Include="Abstract Factory\Lion.cs" />
     <Compile Include="Abstract Factory\Zebra.cs" />
+    <Compile Include="Adapter\StockApp.cs" />
+    <Compile Include="Adapter\StockHistoryAdapter.cs" />
+    <Compile Include="Adapter\StockHistoryDB.cs" />
+    <Compile Include="Adapter\StockHistoryTarget.cs" />
     <Compile Include="Builder\BurgerMenuBuilder.cs" />
     <Compile Include="Builder\KidsMenuBuilder.cs" />
     <Compile Include="Builder\Menu.cs" />
@@ -83,9 +87,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Abstract Factory\AbstractFactoryChecklist.txt" />
+    <Content Include="Adapter\AdapterPatternChecklist.txt" />
     <Content Include="Builder\BuilderPatternChecklist.txt" />
     <Content Include="Factory Method\FactoryMethodPatternChecklist.txt" />
     <Content Include="Prototype\PrototypePatternChecklist.txt" />
+    <Content Include="Singelton\SingeltonPatternChecklist.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
