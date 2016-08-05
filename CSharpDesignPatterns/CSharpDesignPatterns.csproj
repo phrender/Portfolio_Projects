@@ -36,6 +36,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -71,6 +72,10 @@
     <Compile Include="Factory Method\ToyCreator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Prototype\Client.cs" />
+    <Compile Include="Prototype\ConcretePrototype1.cs" />
+    <Compile Include="Prototype\ConcretePrototype2.cs" />
+    <Compile Include="Prototype\Prototype.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

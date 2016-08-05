@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+// Pattern locations
 using CSharpDesignPatterns.Abstract_Factory;
 using CSharpDesignPatterns.Builder;
 using CSharpDesignPatterns.Factory_Method;
+using CSharpDesignPatterns.Prototype;
 
 namespace CSharpDesignPatterns
 {
@@ -67,6 +70,18 @@ namespace CSharpDesignPatterns
 
             #endregion
 
+            #region Prototype pattern
+
+            //Client client = new Client();
+
+            //ConcretePrototype1 prototype1 = new ConcretePrototype1();
+            //Prototype.Prototype product1 = client.CreateProduct(prototype1);
+
+            //ConcretePrototype2 prototype2 = new ConcretePrototype2();
+            //Prototype.Prototype product2 = client.CreateProduct(prototype2);
+
+            #endregion
+            
         }
     }
 }
