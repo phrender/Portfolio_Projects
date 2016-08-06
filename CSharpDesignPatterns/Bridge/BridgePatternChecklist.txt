@@ -1,0 +1,7 @@
+﻿Bridge pattern checklist
+
+[ ] - Identify two or more orthogonal class hierarchies
+[ ] - Design an abstract client oriented interface that defines what the client wants
+[ ] - Design an abstract platform oriented interface that defines what the platform provides
+[ ] - Add derived specialization classes for eachh concrete abstraction.
+[ ] - Add derived classes for each concrete platform

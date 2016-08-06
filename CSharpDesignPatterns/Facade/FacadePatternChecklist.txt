@@ -1,0 +1,7 @@
+﻿Facade pattern checklist
+
+[ ] - Identify a complex subsystem in your application that you want to simplify
+[ ] - Design a simple unified interface for the system
+[ ] - Create a Facade class with the simple unified interface
+[ ] - Have the facade call the appropriabe low-level methods to implement the interface
+[ ] - Modify the client to always use the facade

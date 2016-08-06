@@ -1,0 +1,7 @@
+﻿Prototype pattern checklist
+
+[ ] - Make sure your objects have complex multi-step initialization and dirive from the same generic template
+[ ] - Create an abstract prototype that celares a Clone method
+[ ] - Create a concrete prototype that implements the Clone method
+[ ] - Add a client that initializes the objects by starting a cloned prototype
+[ ] - Make sure the calling code does not use new anywhere

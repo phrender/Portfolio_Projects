@@ -1,0 +1,7 @@
+﻿Checklist for AbstractFactoryPattern
+
+[ ] - Large product family
+[ ] - Create a matrix of platforms vs products
+[ ] - Have at least two abstract products
+[ ] - Create abstract factory withg create methods for eact product type
+[ ] - Make sure the client doesn't use 'new', it should only use the abstract types.

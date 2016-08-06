@@ -1,0 +1,8 @@
+﻿Composite pattern checklist
+
+[ ] - Identify all composite objects that are composed of nested child components
+[ ] - Create an abstract Component base class that contains the lowest denominator
+[ ] - Add a derived Leaf class and add any leaf management methods to this class
+[ ] - Add a derived Composite class and add ant child management methods to this class
+[ ] - Implement the component API for the leaf and composite classes
+[ ] - Add as many subclasses of Leaf and Composite as you need

@@ -1,0 +1,7 @@
+﻿Proxy pattern checklist
+
+[ ] - Identify the need for a proxy (lazy loading, remote access or access control)
+[ ] - Define an interface that will make the proxy and the real object interchangeable
+[ ] - Add proxy constrictor that recives and stores a reference to the real object
+[ ] - Implement the proxy interface
+[ ] - Make sure the client instantiates the proxy instead of a real object

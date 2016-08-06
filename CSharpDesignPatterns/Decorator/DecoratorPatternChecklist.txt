@@ -1,0 +1,8 @@
+﻿Decorator pattern checklist
+
+[ ] - Make sure you need to add functionallity and that you cant dubclass it.
+[ ] - Create an abstract class with the lowest common denominator
+[ ] - Derive the existing class form the component base class
+[ ] - Create an abstract decorator class which also derives from the component base class
+[ ] - Define a decorator for each additional piece of functionallity
+[ ] - The client defines the type and ordering of component and decorator objects
