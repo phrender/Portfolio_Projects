@@ -11,6 +11,8 @@ using CSharpDesignPatterns.Factory_Method;
 using CSharpDesignPatterns.Prototype;
 using CSharpDesignPatterns.Singelton;
 using CSharpDesignPatterns.Adapter;
+using CSharpDesignPatterns.Bridge;
+using CSharpDesignPatterns.Composite;
 
 namespace CSharpDesignPatterns
 {
@@ -18,6 +20,10 @@ namespace CSharpDesignPatterns
     {
         static void Main(string[] args)
         {
+            /*
+             * Samples using the different patterns included in this project.
+             */
+
             #region Abstract Factory pattern
 
             //ContinentFactory factory1 = new AfricaFactory();
@@ -96,8 +102,41 @@ namespace CSharpDesignPatterns
 
             #region Adapter pattern
 
-            StockApp app = new StockApp();
-            app.ShowStockHistory("APPL");
+            //StockApp app = new StockApp();
+            //app.ShowStockHistory("APPL");
+
+            #endregion
+
+            #region Bridge pattern
+
+            //Console.WriteLine("Line drawn using OpenGL commands.");
+            //Shape line = new Line(new OpenGLAPI());
+            //line.Draw();
+            //Console.WriteLine();
+
+            //Console.WriteLine("Rectangle drawn using SVG commands.");
+            //Shape rectangle = new Rectangle(new SvgAPI());
+            //rectangle.Draw();
+            //Console.WriteLine();
+
+            //Console.WriteLine("Square drawn using OpenGL commands.");
+            //Shape square = new Square(new OpenGLAPI());
+            //square.Draw();
+            //Console.WriteLine();
+
+            #endregion
+
+            #region Composite pattern
+
+            Html html = new Html();
+            Body body = new Body();
+            P p = new P();
+            Text text = new Text("Hello world\n");
+            p.AddHtmlChild(text);
+            body.AddHtmlChild(p);
+            html.AddHtmlChild(body);
+
+            Console.WriteLine(html.Render());
 
             #endregion
 

@@ -72,6 +72,13 @@
     <Compile Include="Builder\MenuBuilder.cs" />
     <Compile Include="Builder\MenuDirector.cs" />
     <Compile Include="Builder\SaladMenuBuilder.cs" />
+    <Compile Include="Composite\Body.cs" />
+    <Compile Include="Composite\Html.cs" />
+    <Compile Include="Composite\HtmlNode.cs" />
+    <Compile Include="Composite\HtmlTag.cs" />
+    <Compile Include="Composite\LeaftNode.cs" />
+    <Compile Include="Composite\P.cs" />
+    <Compile Include="Composite\Text.cs" />
     <Compile Include="Factory Method\Color.cs" />
     <Compile Include="Factory Method\Duck.cs" />
     <Compile Include="Factory Method\DuckCreator.cs" />
@@ -95,6 +102,7 @@
   <ItemGroup>
     <Content Include="Abstract Factory\AbstractFactoryChecklist.txt" />
     <Content Include="Adapter\AdapterPatternChecklist.txt" />
+    <Content Include="Bridge\BridgePatternChecklist.txt" />
     <Content Include="Builder\BuilderPatternChecklist.txt" />
     <Content Include="Factory Method\FactoryMethodPatternChecklist.txt" />
     <Content Include="Prototype\PrototypePatternChecklist.txt" />
