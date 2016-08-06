@@ -86,6 +86,12 @@
     <Compile Include="Decorator\QuatroStagioni.cs" />
     <Compile Include="Decorator\WithExtraCheese.cs" />
     <Compile Include="Decorator\WithExtraHam.cs" />
+    <Compile Include="Facade\MutualFund.cs" />
+    <Compile Include="Facade\Subsystem\BackAccount.cs" />
+    <Compile Include="Facade\Subsystem\CashAccount.cs" />
+    <Compile Include="Facade\Subsystem\Equity.cs" />
+    <Compile Include="Facade\Subsystem\EquityFactory.cs" />
+    <Compile Include="Facade\Subsystem\Stock.cs" />
     <Compile Include="Factory Method\Color.cs" />
     <Compile Include="Factory Method\Duck.cs" />
     <Compile Include="Factory Method\DuckCreator.cs" />

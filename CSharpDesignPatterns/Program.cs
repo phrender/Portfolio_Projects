@@ -14,6 +14,7 @@ using CSharpDesignPatterns.Adapter;
 using CSharpDesignPatterns.Bridge;
 using CSharpDesignPatterns.Composite;
 using CSharpDesignPatterns.Decorator;
+using CSharpDesignPatterns.Facade;
 
 namespace CSharpDesignPatterns
 {
@@ -142,16 +143,23 @@ namespace CSharpDesignPatterns
             #endregion
 
             #region Decorator
-            
-            PizzaElement pizza = null;
 
-            pizza = new WithExtraHam(new Margarita());
-            decimal price = pizza.GetPrice();
-            Console.WriteLine("Margarita + ham: {0}", price);
+            //PizzaElement pizza = null;
 
-            pizza = new WithExtraHam(new WithExtraCheese(new Fungi()));
-            price = pizza.GetPrice();
-            Console.WriteLine("Fungi + ham, cheese: {0}", price);
+            //pizza = new WithExtraHam(new Margarita());
+            //decimal price = pizza.GetPrice();
+            //Console.WriteLine("Margarita + ham: {0}", price);
+
+            //pizza = new WithExtraHam(new WithExtraCheese(new Fungi()));
+            //price = pizza.GetPrice();
+            //Console.WriteLine("Fungi + ham, cheese: {0}", price);
+
+            #endregion
+
+            #region Facade
+
+            MutualFund mutualFund = new MutualFund(12349876);
+            mutualFund.Buy("GOOG", 50);
 
             #endregion
 
