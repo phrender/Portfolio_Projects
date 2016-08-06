@@ -1,0 +1,8 @@
+﻿Flyweight pattern checklist
+
+[ ] - Make sure you need to support a very large number of fine grained objects and that hte extrinsic state can be retrived quickly and on demand
+[ ] - Split the object state int to shareable intrinsic state and non-shareable extrinsic states
+[ ] - Remove the extrinsic state from the object and add it to the calling argument list
+[ ] - Create a factory that can cache and reuse existing class instances
+[ ] - Change the client to use the factory to request objects
+[ ] - Change the client to look up extrinsic state and provide it to all methods.

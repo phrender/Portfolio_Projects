@@ -15,6 +15,7 @@ using CSharpDesignPatterns.Bridge;
 using CSharpDesignPatterns.Composite;
 using CSharpDesignPatterns.Decorator;
 using CSharpDesignPatterns.Facade;
+using CSharpDesignPatterns.Flyweight;
 
 namespace CSharpDesignPatterns
 {
@@ -158,8 +159,15 @@ namespace CSharpDesignPatterns
 
             #region Facade
 
-            MutualFund mutualFund = new MutualFund(12349876);
-            mutualFund.Buy("GOOG", 50);
+            //MutualFund mutualFund = new MutualFund(12349876);
+            //mutualFund.Buy("GOOG", 50);
+
+            #endregion
+
+            #region Flyweight
+
+            WebpageRenderer webRenderer = new WebpageRenderer();
+            webRenderer.Render();
 
             #endregion
 
