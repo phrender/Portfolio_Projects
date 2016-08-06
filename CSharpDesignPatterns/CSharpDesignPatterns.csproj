@@ -59,6 +59,13 @@
     <Compile Include="Adapter\StockHistoryAdapter.cs" />
     <Compile Include="Adapter\StockHistoryDB.cs" />
     <Compile Include="Adapter\StockHistoryTarget.cs" />
+    <Compile Include="Bridge\DrawAPI.cs" />
+    <Compile Include="Bridge\Line.cs" />
+    <Compile Include="Bridge\OpenGLAPI.cs" />
+    <Compile Include="Bridge\Rectangle.cs" />
+    <Compile Include="Bridge\Shape.cs" />
+    <Compile Include="Bridge\Square.cs" />
+    <Compile Include="Bridge\SvgAPI.cs" />
     <Compile Include="Builder\BurgerMenuBuilder.cs" />
     <Compile Include="Builder\KidsMenuBuilder.cs" />
     <Compile Include="Builder\Menu.cs" />
