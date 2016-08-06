@@ -44,6 +44,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Chain Of Responsibility\CEO.cs" />
+    <Compile Include="Chain Of Responsibility\Manager.cs" />
+    <Compile Include="Chain Of Responsibility\POApprover.cs" />
+    <Compile Include="Chain Of Responsibility\POSystem.cs" />
+    <Compile Include="Chain Of Responsibility\VicePresident.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

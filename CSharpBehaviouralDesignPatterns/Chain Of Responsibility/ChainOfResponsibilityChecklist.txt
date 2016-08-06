@@ -1,0 +1,8 @@
+﻿Chain of Responsibility pattern
+
+[ ] - Make sure you are unable to match the render of a request to its receiver at compile time or if you want to map requests to multiple receivers
+[ ] - Create an abstract handler class that declares the request interface
+[ ] - Create a concrete handler clas thatn implements the request interface
+[ ] - Have each handler pass the request ip the chain if needed.
+[ ] - Define what should hapen if no handler can process the request.
+[ ] - Create a client class that sets up the chain of handles and provides a methods for submittin a request to the root of the chain.
