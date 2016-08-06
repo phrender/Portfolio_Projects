@@ -13,6 +13,7 @@ using CSharpDesignPatterns.Singelton;
 using CSharpDesignPatterns.Adapter;
 using CSharpDesignPatterns.Bridge;
 using CSharpDesignPatterns.Composite;
+using CSharpDesignPatterns.Decorator;
 
 namespace CSharpDesignPatterns
 {
@@ -128,15 +129,29 @@ namespace CSharpDesignPatterns
 
             #region Composite pattern
 
-            Html html = new Html();
-            Body body = new Body();
-            P p = new P();
-            Text text = new Text("Hello world\n");
-            p.AddHtmlChild(text);
-            body.AddHtmlChild(p);
-            html.AddHtmlChild(body);
+            //Html html = new Html();
+            //Body body = new Body();
+            //P p = new P();
+            //Text text = new Text("Hello world\n");
+            //p.AddHtmlChild(text);
+            //body.AddHtmlChild(p);
+            //html.AddHtmlChild(body);
 
-            Console.WriteLine(html.Render());
+            //Console.WriteLine(html.Render());
+
+            #endregion
+
+            #region Decorator
+            
+            PizzaElement pizza = null;
+
+            pizza = new WithExtraHam(new Margarita());
+            decimal price = pizza.GetPrice();
+            Console.WriteLine("Margarita + ham: {0}", price);
+
+            pizza = new WithExtraHam(new WithExtraCheese(new Fungi()));
+            price = pizza.GetPrice();
+            Console.WriteLine("Fungi + ham, cheese: {0}", price);
 
             #endregion
 
