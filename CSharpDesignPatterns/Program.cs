@@ -16,6 +16,7 @@ using CSharpDesignPatterns.Composite;
 using CSharpDesignPatterns.Decorator;
 using CSharpDesignPatterns.Facade;
 using CSharpDesignPatterns.Flyweight;
+using CSharpDesignPatterns.Proxy;
 
 namespace CSharpDesignPatterns
 {
@@ -143,7 +144,7 @@ namespace CSharpDesignPatterns
 
             #endregion
 
-            #region Decorator
+            #region Decorator pattern
 
             //PizzaElement pizza = null;
 
@@ -157,17 +158,24 @@ namespace CSharpDesignPatterns
 
             #endregion
 
-            #region Facade
+            #region Facade pattern
 
             //MutualFund mutualFund = new MutualFund(12349876);
             //mutualFund.Buy("GOOG", 50);
 
             #endregion
 
-            #region Flyweight
+            #region Flyweight pattern
 
-            WebpageRenderer webRenderer = new WebpageRenderer();
-            webRenderer.Render();
+            //WebpageRenderer webRenderer = new WebpageRenderer();
+            //webRenderer.Render();
+
+            #endregion
+
+            #region Proxy pattern
+
+            BadClient client = new BadClient();
+            client.Execute();
 
             #endregion
 
